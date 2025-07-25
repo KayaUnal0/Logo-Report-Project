@@ -1,0 +1,14 @@
+﻿<h1>{{ subject }}</h1>
+
+<p>Merhaba,</p>
+<p>Raporunuz hazır. Detaylar aşağıdadır:</p>
+
+<p>
+	<strong>Durum:</strong> {{ status }}
+</p>
+
+<pre>{{ results }}</pre>
+
+<p>
+	<strong>Dizin:</strong> {{ filePath }}
+</p>
