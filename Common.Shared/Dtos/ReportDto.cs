@@ -2,9 +2,13 @@
 {
     public class ReportDto
     {
-        public string Email { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
-        public string Query { get; set; } = string.Empty;
-        public string? AttachmentPath { get; set; }
+        public string Subject { get; set; }
+        public string Email { get; set; }
+        public string Query { get; set; }
+        public string Directory { get; set; } 
+        public string Period { get; set; }
+        public List<string> SelectedDays { get; set; } = new();
+
     }
+
 }

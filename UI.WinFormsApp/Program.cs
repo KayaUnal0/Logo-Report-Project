@@ -37,7 +37,7 @@ namespace Logo_Project
 
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer));
+            Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer));
 
         }
 

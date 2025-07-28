@@ -1,5 +1,5 @@
-﻿using Common.Shared.Dtos;
-using Common.Shared.Enums;
+﻿using Common.Shared;
+using Common.Shared.Dtos;
 using Core.Interfaces;
 using Hangfire;
 using Infrastructure.Logic.Filesystem;
@@ -19,6 +19,14 @@ namespace UI.WinFormsApp
         private readonly EmailJob _emailJob;
         private readonly IFileSaver _fileSaver;
         private readonly TemplateRenderer _templateRenderer;
+        private bool isEditMode = false;
+        private ReportDto currentReport = null;
+
+        private TextBox txtReportTitle, txtEmail, txtDirectory;
+        private RichTextBox rtbSqlQuery;
+        private ComboBox cmbPeriod;
+        private List<CheckBox> dayCheckboxes = new();
+
 
         public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer)
         {
@@ -32,29 +40,31 @@ namespace UI.WinFormsApp
             SetupFormLayout();
         }
 
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            Log.Information("Form loaded");
-        }
         private async void BtnOnayla_Click(object sender, EventArgs e)
         {
             try
             {
                 Log.Information("Onayla button clicked");
 
-                var report = new ReportDto
-                {
-                    Email = (Controls["txtEmail"] as TextBox)?.Text ?? "",
-                    Subject = (Controls["txtReportTitle"] as TextBox)?.Text ?? "",
-                    Query = (Controls["rtbSqlQuery"] as RichTextBox)?.Text ?? ""
-                };
+                var report = isEditMode ? currentReport : new ReportDto();
+
+                report.Email = txtEmail.Text;
+                report.Subject = txtReportTitle.Text;
+                report.Query = rtbSqlQuery.Text;
+                report.Period = cmbPeriod.SelectedItem?.ToString() ?? "";
+                report.SelectedDays = dayCheckboxes
+                    .Where(cb => cb.Checked)
+                    .Select(cb => cb.Text)
+                    .ToList();
 
                 var result = _sqlQueryRunner.ExecuteQuery(report.Query);
 
-                var directory = (Controls["txtDirectory"] as TextBox)?.Text ?? "";
-                var fileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-                var filePath = _fileSaver.SaveReportToFile(directory, fileName, result.Results);
+                if (!isEditMode)
+                {
+                    report.Directory = txtDirectory.Text;
+                    var fileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                    var filePath = _fileSaver.SaveReportToFile(report.Directory, fileName, result.Results);
+                }
 
                 var templatePath = "Templates/EmailTemplate.sbn";
                 var body = await _templateRenderer.RenderTemplateAsync(templatePath, new
@@ -62,14 +72,20 @@ namespace UI.WinFormsApp
                     subject = report.Subject,
                     status = result.Status.ToString(),
                     results = string.Join("\n", result.Results),
-                    filePath
+                    filePath = report.Directory
                 });
 
                 BackgroundJob.Enqueue(() => EmailJobWrapper.SendEmail(report.Email, report.Subject, body));
 
+                if (isEditMode)
+                    ReportStorage.UpdateReport(report);
+                else
+                    ReportStorage.AddReport(report);
+
 
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Log.Information("Email job enqueued for {Email}", report.Email);
+                Close();
             }
             catch (Exception ex)
             {
@@ -78,8 +94,26 @@ namespace UI.WinFormsApp
             }
         }
 
+        public void LoadReport(ReportDto report)
+        {
+            isEditMode = true;
+            currentReport = report;
+            txtReportTitle.Text = report.Subject;
+            txtEmail.Text = report.Email;
+            rtbSqlQuery.Text = report.Query;
+            txtDirectory.Text = report.Directory;
+            cmbPeriod.SelectedItem = report.Period;
 
-        // LAYOUT
+            txtReportTitle.ReadOnly = true;
+            txtDirectory.ReadOnly = true;
+
+            foreach (var cb in dayCheckboxes)
+            {
+                cb.Checked = report.SelectedDays?.Contains(cb.Text) == true;
+            }
+
+        }
+
         private void SetupFormLayout()
         {
             this.Text = "Rapor Planlayıcı";
@@ -90,51 +124,55 @@ namespace UI.WinFormsApp
             int y = 20;
             int spacing = 35;
 
-            void AddControl(Control ctrl) => Controls.Add(ctrl);
-
-            AddControl(new Label { Text = "Rapor Başlığı", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new TextBox { Name = "txtReportTitle", Location = new Point(controlX, y), Width = 300 });
+            Controls.Add(new Label { Text = "Rapor Başlığı", Location = new Point(labelX, y), AutoSize = true });
+            txtReportTitle = new TextBox { Location = new Point(controlX, y), Width = 300 };
+            Controls.Add(txtReportTitle);
             y += spacing;
 
-            AddControl(new Label { Text = "Rapor Sorgusu", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new RichTextBox { Name = "rtbSqlQuery", Location = new Point(controlX, y), Size = new Size(300, 100) });
+            Controls.Add(new Label { Text = "Rapor Sorgusu", Location = new Point(labelX, y), AutoSize = true });
+            rtbSqlQuery = new RichTextBox { Location = new Point(controlX, y), Size = new Size(300, 100) };
+            Controls.Add(rtbSqlQuery);
             y += 110;
 
-            AddControl(new Label { Text = "E-Posta", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new TextBox { Name = "txtEmail", Location = new Point(controlX, y), Width = 300, Text = "xxx@logocom.tr" });
+            Controls.Add(new Label { Text = "E-Posta", Location = new Point(labelX, y), AutoSize = true });
+            txtEmail = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "xxx@logocom.tr" };
+            Controls.Add(txtEmail);
             y += spacing;
 
-            AddControl(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new TextBox { Name = "txtDirectory", Location = new Point(controlX, y), Width = 300, Text = "C:\\..." });
+            Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
+            txtDirectory = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "C:\\..." };
+            Controls.Add(txtDirectory);
             y += spacing;
 
-            AddControl(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
-            var cmbPeriod = new ComboBox
+            Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
+            cmbPeriod = new ComboBox
             {
-                Name = "cmbPeriod",
                 Location = new Point(controlX, y),
                 Width = 300,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
+
             cmbPeriod.Items.AddRange(new string[] { "Günlük", "Haftalık", "Aylık" });
             cmbPeriod.SelectedIndex = 0;
-            AddControl(cmbPeriod);
+            Controls.Add(cmbPeriod);
             y += spacing;
 
             string[] days = { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" };
             for (int i = 0; i < days.Length; i++)
             {
-                AddControl(new CheckBox
+                var cb = new CheckBox
                 {
                     Text = days[i],
                     Location = new Point(controlX, y + i * 25),
                     AutoSize = true
-                });
+                };
+                dayCheckboxes.Add(cb);
+                Controls.Add(cb);
             }
             y += 8 * 25;
 
-            AddControl(new Label { Text = "Gün", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new DateTimePicker
+            Controls.Add(new Label { Text = "Gün", Location = new Point(labelX, y), AutoSize = true });
+            Controls.Add(new DateTimePicker
             {
                 Name = "dtpDate",
                 Format = DateTimePickerFormat.Short,
@@ -143,8 +181,8 @@ namespace UI.WinFormsApp
             });
             y += spacing;
 
-            AddControl(new Label { Text = "Saat", Location = new Point(labelX, y), AutoSize = true });
-            AddControl(new DateTimePicker
+            Controls.Add(new Label { Text = "Saat", Location = new Point(labelX, y), AutoSize = true });
+            Controls.Add(new DateTimePicker
             {
                 Name = "dtpTime",
                 Format = DateTimePickerFormat.Time,
@@ -162,7 +200,12 @@ namespace UI.WinFormsApp
                 Height = 40
             };
             btnOnayla.Click += BtnOnayla_Click;
-            AddControl(btnOnayla);
+            Controls.Add(btnOnayla);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
