@@ -28,9 +28,9 @@ namespace Logo_Project
             using var server = new BackgroundJobServer();
 
             var config = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false)
-            .Build();
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
 
             // Manually initialize dependencies
             var emailSettings = config.GetSection("EmailSettings").Get<EmailSettings>();
