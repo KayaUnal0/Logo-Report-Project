@@ -9,6 +9,13 @@ namespace Infrastructure.Logic.Email
 {
     public class EmailSender : IEmailSender
     {
+        private readonly EmailSettings _settings;
+
+        public EmailSender(EmailSettings settings)
+        {
+            _settings = settings;
+        }
+
         public bool Send(string toAddress, string subject, string body, string attachmentPath = null)
         {
             try
@@ -22,14 +29,9 @@ namespace Infrastructure.Logic.Email
 
                 Log.Information("E-posta gönderilmeye hazırlanıyor: Alıcı = {Email}, Konu = {Subject}", toAddress, subject);
 
-                string smtpServer = "smtp.gmail.com";
-                int smtpPort = 587;
-                string senderEmail = "kayaunal010@gmail.com";
-                string senderPassword = "urcs rafh iage wckf"; // move to config!
-
-                MailMessage mail = new MailMessage
+                var mail = new MailMessage
                 {
-                    From = new MailAddress(senderEmail),
+                    From = new MailAddress(_settings.SenderEmail),
                     Subject = subject,
                     Body = body,
                     IsBodyHtml = true
@@ -41,9 +43,9 @@ namespace Infrastructure.Logic.Email
                     mail.Attachments.Add(new Attachment(attachmentPath));
                 }
 
-                SmtpClient smtpClient = new SmtpClient(smtpServer, smtpPort)
+                using var smtpClient = new SmtpClient(_settings.SmtpServer, _settings.SmtpPort)
                 {
-                    Credentials = new NetworkCredential(senderEmail, senderPassword),
+                    Credentials = new NetworkCredential(_settings.SenderEmail, _settings.SenderPassword),
                     EnableSsl = true
                 };
 
