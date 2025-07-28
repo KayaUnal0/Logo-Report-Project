@@ -1,6 +1,7 @@
 ﻿using Common.Shared;
 using Common.Shared.Dtos;
 using Core.Interfaces;
+using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
@@ -24,7 +25,12 @@ namespace Logo_Project
         private ListBox lstReports;
         private List<ReportDto> _reports;
 
-        public HomeScreen(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer)
+        private readonly IReportRepository _reportRepository;
+
+        private DataGridView dataGridViewReports;
+
+
+        public HomeScreen(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _emailSender = emailSender;
             _sqlQueryRunner = sqlQueryRunner;
@@ -32,10 +38,12 @@ namespace Logo_Project
             _fileSaver = fileSaver;
             _emailJob = emailJob;
             _templateRenderer = templateRenderer;
+            _reportRepository = reportRepository;
 
             InitializeComponent();
             SetupLayout();
         }
+
         private void SetupLayout()
         {
             this.Text = "Ana Ekran";
@@ -49,13 +57,6 @@ namespace Logo_Project
             };
             btnNew.Click += BtnNew_Click;
             Controls.Add(btnNew);
-
-            lstReports = new ListBox
-            {
-                Location = new Point(20, 80),
-                Size = new Size(540, 280)
-            };
-            Controls.Add(lstReports);
 
             var btnEdit = new Button
             {
@@ -75,57 +76,74 @@ namespace Logo_Project
             btnDelete.Click += BtnDelete_Click;
             Controls.Add(btnDelete);
 
-            LoadReports();
-        }
-
-        private void LoadReports()
-        {
-            ReportStorage.LoadFromDisk();
-            _reports = ReportStorage.GetAllReports();
-            lstReports.Items.Clear();
-
-            foreach (var report in _reports)
+            dataGridViewReports = new DataGridView
             {
-                lstReports.Items.Add($"{report.Subject} - {report.Email}");
-            }
-        }
+                Location = new Point(20, 60),
+                Size = new Size(600, 300),
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ReadOnly = true,
+                AllowUserToAddRows = false
+            };
+            Controls.Add(dataGridViewReports);
 
+            LoadReportsGrid();
+        }
+        private void LoadReportsGrid()
+        {
+            _reports = _reportRepository.GetReports();
+
+            dataGridViewReports.DataSource = _reports.Select(r => new
+            {
+                Başlık = r.Subject,
+                Period = r.Period,
+                Eposta = r.Email,
+                Dizin = r.Directory,
+                Aktif = true
+            }).ToList();
+        }
 
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer);
+            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
             form.ShowDialog();
-            LoadReports(); 
+            LoadReportsGrid(); 
         }
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
-            if (lstReports.SelectedIndex < 0)
+            if (dataGridViewReports.CurrentRow == null)
             {
                 MessageBox.Show("Lütfen bir rapor seçin.");
                 return;
             }
 
-            var selected = _reports[lstReports.SelectedIndex];
-            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer);
+            var index = dataGridViewReports.CurrentRow.Index;
+            var selected = _reports[index];
+
+            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
             form.LoadReport(selected);
             form.ShowDialog();
-            LoadReports();
+            LoadReportsGrid();
         }
-
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
-            if (lstReports.SelectedIndex < 0)
+            if (dataGridViewReports.CurrentRow == null)
             {
                 MessageBox.Show("Lütfen bir rapor seçin.");
                 return;
             }
 
-            int index = lstReports.SelectedIndex;
-            ReportStorage.DeleteReport(index);
-            LoadReports();
+            var index = dataGridViewReports.CurrentRow.Index;
+            var selected = _reports[index];
+
+            var confirm = MessageBox.Show($"'{selected.Subject}' başlıklı raporu silmek istiyor musunuz?", "Onayla", MessageBoxButtons.YesNo);
+            if (confirm == DialogResult.Yes)
+            {
+                _reportRepository.DeleteReport(selected.Subject);
+                LoadReportsGrid();
+            }
         }
 
 

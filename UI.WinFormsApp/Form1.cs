@@ -2,6 +2,7 @@
 using Common.Shared.Dtos;
 using Core.Interfaces;
 using Hangfire;
+using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
@@ -9,6 +10,8 @@ using Serilog;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Text.Json;
+
 
 namespace UI.WinFormsApp
 {
@@ -19,7 +22,9 @@ namespace UI.WinFormsApp
         private readonly EmailJob _emailJob;
         private readonly IFileSaver _fileSaver;
         private readonly TemplateRenderer _templateRenderer;
+        private readonly IReportRepository _reportRepository;
         private bool isEditMode = false;
+        private string _originalTitle;
         private ReportDto currentReport = null;
 
         private TextBox txtReportTitle, txtEmail, txtDirectory;
@@ -28,17 +33,19 @@ namespace UI.WinFormsApp
         private List<CheckBox> dayCheckboxes = new();
 
 
-        public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer)
+        public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _sqlQueryRunner = sqlQueryRunner;
             _hangfireManager = hangfireManager;
             _emailJob = emailJob;
             _fileSaver = fileSaver;
             _templateRenderer = templateRenderer;
+            _reportRepository = reportRepository;
 
             InitializeComponent();
             SetupFormLayout();
         }
+
 
         private async void BtnOnayla_Click(object sender, EventArgs e)
         {
@@ -58,13 +65,17 @@ namespace UI.WinFormsApp
                     .ToList();
 
                 var result = _sqlQueryRunner.ExecuteQuery(report.Query);
-
                 if (!isEditMode)
                 {
-                    report.Directory = txtDirectory.Text;
-                    var fileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-                    var filePath = _fileSaver.SaveReportToFile(report.Directory, fileName, result.Results);
+                    report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
+
+                    if (!string.IsNullOrEmpty(report.Directory))
+                    {
+                        var fileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                        var filePath = _fileSaver.SaveReportToFile(report.Directory, fileName, result.Results);
+                    }
                 }
+
 
                 var templatePath = "Templates/EmailTemplate.sbn";
                 var body = await _templateRenderer.RenderTemplateAsync(templatePath, new
@@ -78,10 +89,9 @@ namespace UI.WinFormsApp
                 BackgroundJob.Enqueue(() => EmailJobWrapper.SendEmail(report.Email, report.Subject, body));
 
                 if (isEditMode)
-                    ReportStorage.UpdateReport(report);
+                    _reportRepository.UpdateReport(_originalTitle, report);
                 else
-                    ReportStorage.AddReport(report);
-
+                    _reportRepository.SaveReport(report);
 
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Log.Information("Email job enqueued for {Email}", report.Email);
@@ -106,12 +116,23 @@ namespace UI.WinFormsApp
 
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
+            _originalTitle = report.Subject;
 
             foreach (var cb in dayCheckboxes)
             {
                 cb.Checked = report.SelectedDays?.Contains(cb.Text) == true;
             }
 
+        }
+
+
+        private void BtnBrowse_Click(object sender, EventArgs e)
+        {
+            using var dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                txtDirectory.Text = dialog.SelectedPath;
+            }
         }
 
         private void SetupFormLayout()
@@ -138,10 +159,27 @@ namespace UI.WinFormsApp
             txtEmail = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "xxx@logocom.tr" };
             Controls.Add(txtEmail);
             y += spacing;
-
             Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
-            txtDirectory = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "C:\\..." };
+
+            txtDirectory = new TextBox
+            {
+                Location = new Point(controlX, y),
+                Width = 220,
+                PlaceholderText = "İsteğe bağlı"
+            };
             Controls.Add(txtDirectory);
+
+            // Gözat Button
+            var btnBrowse = new Button
+            {
+                Text = "Gözat...",
+                Location = new Point(controlX + 230, y),
+                Width = 70,
+                Height = 25
+            };
+            btnBrowse.Click += BtnBrowse_Click;
+            Controls.Add(btnBrowse);
+
             y += spacing;
 
             Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });

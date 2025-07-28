@@ -33,12 +33,11 @@ namespace Logo_Project
             var hangfireManager = new HangfireServerManager(emailJob);
             var fileSaver = new FileSaver();
             var templateRenderer = new TemplateRenderer();
-
-
+            string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
+            var reportRepository = new ReportRepository(connectionString);
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer));
-
+            Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
         }
 
     }
