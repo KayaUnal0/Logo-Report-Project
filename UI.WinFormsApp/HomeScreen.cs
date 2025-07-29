@@ -78,8 +78,8 @@ namespace Logo_Project
 
             dataGridViewReports = new DataGridView
             {
-                Location = new Point(20, 60),
-                Size = new Size(600, 300),
+                Location = new Point(20, 90),
+                Size = new Size(540, 250),
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ReadOnly = true,
                 AllowUserToAddRows = false

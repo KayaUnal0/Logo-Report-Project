@@ -32,7 +32,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Common.Shared\Common.Shared.csproj" />
     <ProjectReference Include="..\Core.Interfaces\Core.Interfaces.csproj" />
-    <ProjectReference Include="..\Infastructure.Logic\Infastructure.Logic.csproj" />
     <ProjectReference Include="..\Infrastructure.Logic\Infrastructure.Logic.csproj" />
   </ItemGroup>
 
