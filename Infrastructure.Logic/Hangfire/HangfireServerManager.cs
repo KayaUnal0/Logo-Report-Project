@@ -1,11 +1,16 @@
-﻿using Hangfire;
-using Hangfire.MemoryStorage;
-using Serilog;
+﻿using Common.Shared.Dtos;
+using Common.Shared.Enums;
 using Core.Interfaces;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Jobs;
+using Serilog;
 using System;
 using System.Linq.Expressions;
-using Infrastructure.Logic.Email;
+using Hangfire.Common;
+using Hangfire.States;
+
 
 namespace Infrastructure.Logic.Hangfire
 {
@@ -44,6 +49,49 @@ namespace Infrastructure.Logic.Hangfire
         {
             // Call a static method that manually resolves the dependency
             BackgroundJob.Enqueue(() => EmailJobWrapper.SendEmail(email, subject, body));
+        }
+
+        private string GenerateSafeJobId(string subject, WeekDay day)
+        {
+            var clean = new string(subject
+                .Where(c => char.IsLetterOrDigit(c) || c == '_')
+                .ToArray());
+
+            return $"report:{clean}:{day}";
+        }
+
+        public void ScheduleRecurringEmailJobs(ReportDto report)
+        {
+            // Remove all potential previous jobs
+            foreach (var day in Enum.GetValues(typeof(WeekDay)))
+            {
+                var oldJobId = GenerateSafeJobId(report.Subject, (WeekDay)day);
+                RecurringJob.RemoveIfExists(oldJobId);
+            }
+
+            // Add selected days
+            foreach (var day in report.SelectedDays)
+            {
+                var cron = CronUtils.ToCron(day);
+                var jobId = GenerateSafeJobId(report.Subject, day);
+
+                var job = Job.FromExpression(() =>
+                    EmailReportExecutor.Execute(report.Subject, day.ToString())
+                );
+
+                RecurringJob.AddOrUpdate(
+                    jobId,
+                    () => EmailReportExecutor.Execute(report.Subject, day.ToString()),
+                    Cron.Minutely // TEST PURPOSES
+                );
+            }
+        }
+
+
+        public void RemoveRecurringJob(string jobId)
+        {
+            RecurringJob.RemoveIfExists(jobId);
+            Log.Information("Recurring job {JobId} removed.", jobId);
         }
 
 

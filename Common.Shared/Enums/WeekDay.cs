@@ -2,12 +2,12 @@
 {
     public enum WeekDay
     {
-        Monday,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday
+        Pazartesi,   
+        Salı,       
+        Çarşamba,    
+        Perşembe,    
+        Cuma,      
+        Cumartesi,  
+        Pazar       
     }
 }

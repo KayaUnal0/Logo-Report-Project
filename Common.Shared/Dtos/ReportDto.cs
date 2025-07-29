@@ -1,4 +1,6 @@
-﻿namespace Common.Shared.Dtos
+﻿using Common.Shared.Enums;
+
+namespace Common.Shared.Dtos
 {
     public class ReportDto
     {
@@ -9,10 +11,10 @@
         public string Directory { get; set; }         // dizin
         public bool Aktif { get; set; }               // aktif (checkbox)
 
-        public string Query { get; set; }             // Optional, not in grid
-        public List<string> SelectedDays { get; set; } = new(); // Optional, not in grid
+        public string Query { get; set; }           
+        public List<WeekDay> SelectedDays { get; set; } = new(); 
 
-        public string JsonContent { get; set; }       // Stored in DB, not used directly in UI
+        public string JsonContent { get; set; }       
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

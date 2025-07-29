@@ -1,5 +1,6 @@
 ﻿using Common.Shared;
 using Common.Shared.Dtos;
+using Common.Shared.Enums;
 using Core.Interfaces;
 using Hangfire;
 using Infrastructure.Logic.Database;
@@ -9,8 +10,8 @@ using Infrastructure.Logic.Templates;
 using Serilog;
 using System;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Text.Json;
+using System.Windows.Forms;
 
 
 namespace UI.WinFormsApp
@@ -61,7 +62,7 @@ namespace UI.WinFormsApp
                 report.Period = cmbPeriod.SelectedItem?.ToString() ?? "";
                 report.SelectedDays = dayCheckboxes
                     .Where(cb => cb.Checked)
-                    .Select(cb => cb.Text)
+                    .Select(cb => Enum.Parse<WeekDay>(cb.Text, ignoreCase: true))
                     .ToList();
 
                 var result = _sqlQueryRunner.ExecuteQuery(report.Query);
@@ -75,7 +76,6 @@ namespace UI.WinFormsApp
                         var filePath = _fileSaver.SaveReportToFile(report.Directory, fileName, result.Results);
                     }
                 }
-
 
                 var templatePath = "Templates/EmailTemplate.sbn";
                 var body = await _templateRenderer.RenderTemplateAsync(templatePath, new
@@ -92,6 +92,15 @@ namespace UI.WinFormsApp
                     _reportRepository.UpdateReport(_originalTitle, report);
                 else
                     _reportRepository.SaveReport(report);
+
+                // Before scheduling new jobs
+                foreach (WeekDay day in Enum.GetValues(typeof(WeekDay)))
+                {
+                    var jobId = $"report:{report.Subject}:{day}";
+                    RecurringJob.RemoveIfExists(jobId);
+                }
+
+                _hangfireManager.ScheduleRecurringEmailJobs(report);
 
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Log.Information("Email job enqueued for {Email}", report.Email);
@@ -120,7 +129,10 @@ namespace UI.WinFormsApp
 
             foreach (var cb in dayCheckboxes)
             {
-                cb.Checked = report.SelectedDays?.Contains(cb.Text) == true;
+                if (Enum.TryParse<WeekDay>(cb.Text, ignoreCase: true, out var day))
+                {
+                    cb.Checked = report.SelectedDays?.Contains(day) == true;
+                }
             }
 
         }
