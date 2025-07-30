@@ -60,32 +60,66 @@ namespace Infrastructure.Logic.Hangfire
             return $"report:{clean}:{day}";
         }
 
+        private string Slugify(string subject)
+        {
+            return new string(subject
+                .Where(c => char.IsLetterOrDigit(c) || c == '_')
+                .ToArray());
+        }
+
         public void ScheduleRecurringEmailJobs(ReportDto report)
         {
-            // Remove all potential previous jobs
+            // Parse time (fallback to 09:00 if not available)
+            var time = report.CreatedAt.TimeOfDay;
+
+            // Clean old jobs
             foreach (var day in Enum.GetValues(typeof(WeekDay)))
             {
                 var oldJobId = GenerateSafeJobId(report.Subject, (WeekDay)day);
                 RecurringJob.RemoveIfExists(oldJobId);
             }
 
-            // Add selected days
-            foreach (var day in report.SelectedDays)
-            {
-                var cron = CronUtils.ToCron(day);
-                var jobId = GenerateSafeJobId(report.Subject, day);
+            var period = report.Period?.Trim().ToLowerInvariant();
 
-                var job = Job.FromExpression(() =>
-                    EmailReportExecutor.Execute(report.Subject, day.ToString())
-                );
+            if (period == "günlük")
+            {
+                var jobId = $"report:{Slugify(report.Subject)}:daily";
+                var cron = CronUtils.DailyCron(time);
 
                 RecurringJob.AddOrUpdate(
                     jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, day.ToString()),
-                    Cron.Minutely // TEST PURPOSES
+                    () => EmailReportExecutor.Execute(report.Subject, "daily"),
+                    cron
+                );
+            }
+            else if (period == "haftalık")
+            {
+                foreach (var day in report.SelectedDays)
+                {
+                    var cron = day.ToCron(time);
+                    var jobId = GenerateSafeJobId(report.Subject, day);
+
+                    RecurringJob.AddOrUpdate(
+                        jobId,
+                        () => EmailReportExecutor.Execute(report.Subject, day.ToString()),
+                        cron
+                    );
+                }
+            }
+            else if (period == "aylık")
+            {
+                int dayOfMonth = report.CreatedAt.Day; // Or make this user-selected later
+                var cron = CronUtils.MonthlyCron(time, dayOfMonth);
+                var jobId = $"report:{Slugify(report.Subject)}:monthly";
+
+                RecurringJob.AddOrUpdate(
+                    jobId,
+                    () => EmailReportExecutor.Execute(report.Subject, "monthly"),
+                    cron
                 );
             }
         }
+
 
 
         public void RemoveRecurringJob(string jobId)

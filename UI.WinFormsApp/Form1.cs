@@ -147,6 +147,27 @@ namespace UI.WinFormsApp
             }
         }
 
+        private void CmbPeriod_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            string selectedPeriod = cmbPeriod.SelectedItem?.ToString() ?? "";
+
+            // Controls
+            var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault();
+            var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault();
+
+            bool isDaily = selectedPeriod == "Günlük";
+            bool isWeekly = selectedPeriod == "Haftalık";
+            bool isMonthly = selectedPeriod == "Aylık";
+
+            if (dtpDate != null) dtpDate.Visible = isMonthly;
+            if (dtpTime != null) dtpTime.Visible = isDaily || isWeekly || isMonthly;
+
+            foreach (var cb in dayCheckboxes)
+            {
+                cb.Visible = isWeekly;
+            }
+        }
+
         private void SetupFormLayout()
         {
             this.Text = "Rapor Planlayıcı";
@@ -203,7 +224,6 @@ namespace UI.WinFormsApp
             };
 
             cmbPeriod.Items.AddRange(new string[] { "Günlük", "Haftalık", "Aylık" });
-            cmbPeriod.SelectedIndex = 0;
             Controls.Add(cmbPeriod);
             y += spacing;
 
@@ -251,6 +271,11 @@ namespace UI.WinFormsApp
             };
             btnOnayla.Click += BtnOnayla_Click;
             Controls.Add(btnOnayla);
+
+            cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
+            cmbPeriod.SelectedIndex = 0; // Select "Günlük"
+            CmbPeriod_SelectedIndexChanged(cmbPeriod, EventArgs.Empty);
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
