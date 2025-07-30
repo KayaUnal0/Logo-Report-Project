@@ -151,22 +151,67 @@ namespace UI.WinFormsApp
         {
             string selectedPeriod = cmbPeriod.SelectedItem?.ToString() ?? "";
 
-            // Controls
             var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault();
             var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault();
+            var lblDay = Controls.Find("lblDay", true).FirstOrDefault();
+            var lblTime = Controls.Find("lblTime", true).FirstOrDefault();
 
             bool isDaily = selectedPeriod == "Günlük";
             bool isWeekly = selectedPeriod == "Haftalık";
             bool isMonthly = selectedPeriod == "Aylık";
 
-            if (dtpDate != null) dtpDate.Visible = isMonthly;
-            if (dtpTime != null) dtpTime.Visible = isDaily || isWeekly || isMonthly;
+            int baseY = cmbPeriod.Location.Y + 40;
 
+            // Reposition or hide Day Label & Picker
+            if (lblDay != null && dtpDate != null)
+            {
+                lblDay.Visible = isMonthly;
+                dtpDate.Visible = isMonthly;
+
+                if (isMonthly)
+                {
+                    lblDay.Location = new Point(lblDay.Location.X, baseY);
+                    dtpDate.Location = new Point(dtpDate.Location.X, baseY);
+                    baseY += 35;
+                }
+            }
+
+            // Reposition and show/hide Time
+            if (lblTime != null && dtpTime != null)
+            {
+                lblTime.Visible = isDaily || isWeekly || isMonthly;
+                dtpTime.Visible = isDaily || isWeekly || isMonthly;
+
+                lblTime.Location = new Point(lblTime.Location.X, baseY);
+                dtpTime.Location = new Point(dtpTime.Location.X, baseY);
+                baseY += 35;
+            }
+
+            // Reposition day checkboxes for Haftalık
+            int cbY = baseY;
             foreach (var cb in dayCheckboxes)
             {
                 cb.Visible = isWeekly;
+                cb.Location = new Point(cb.Location.X, cbY);
+                cbY += 25;
+            }
+
+            // Reposition Onayla button after all
+            var btnOnayla = Controls.Find("btnOnayla", true).FirstOrDefault();
+            if (btnOnayla != null)
+            {
+                if (!isWeekly)
+                {
+                    btnOnayla.Location = new Point(btnOnayla.Location.X, baseY + 20);
+                }
+                else
+                {
+                    btnOnayla.Location = new Point(btnOnayla.Location.X, cbY + 20);
+                }
+                
             }
         }
+
 
         private void SetupFormLayout()
         {
@@ -192,8 +237,8 @@ namespace UI.WinFormsApp
             txtEmail = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "xxx@logocom.tr" };
             Controls.Add(txtEmail);
             y += spacing;
-            Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
 
+            Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
             txtDirectory = new TextBox
             {
                 Location = new Point(controlX, y),
@@ -202,7 +247,6 @@ namespace UI.WinFormsApp
             };
             Controls.Add(txtDirectory);
 
-            // Gözat Button
             var btnBrowse = new Button
             {
                 Text = "Gözat...",
@@ -212,7 +256,6 @@ namespace UI.WinFormsApp
             };
             btnBrowse.Click += BtnBrowse_Click;
             Controls.Add(btnBrowse);
-
             y += spacing;
 
             Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
@@ -222,11 +265,11 @@ namespace UI.WinFormsApp
                 Width = 300,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-
             cmbPeriod.Items.AddRange(new string[] { "Günlük", "Haftalık", "Aylık" });
             Controls.Add(cmbPeriod);
             y += spacing;
 
+            // Day checkboxes
             string[] days = { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" };
             for (int i = 0; i < days.Length; i++)
             {
@@ -241,7 +284,16 @@ namespace UI.WinFormsApp
             }
             y += 8 * 25;
 
-            Controls.Add(new Label { Text = "Gün", Location = new Point(labelX, y), AutoSize = true });
+            // Gün (label) — for Aylık
+            var lblDay = new Label
+            {
+                Name = "lblDay",
+                Text = "Gün",
+                Location = new Point(labelX, y),
+                AutoSize = true
+            };
+            Controls.Add(lblDay);
+
             Controls.Add(new DateTimePicker
             {
                 Name = "dtpDate",
@@ -251,7 +303,16 @@ namespace UI.WinFormsApp
             });
             y += spacing;
 
-            Controls.Add(new Label { Text = "Saat", Location = new Point(labelX, y), AutoSize = true });
+            // Saat (label) — for all
+            var lblTime = new Label
+            {
+                Name = "lblTime",
+                Text = "Saat",
+                Location = new Point(labelX, y),
+                AutoSize = true
+            };
+            Controls.Add(lblTime);
+
             Controls.Add(new DateTimePicker
             {
                 Name = "dtpTime",
@@ -260,12 +321,13 @@ namespace UI.WinFormsApp
                 Location = new Point(controlX, y),
                 Width = 200
             });
+            y += spacing;
 
             var btnOnayla = new Button
             {
                 Name = "btnOnayla",
                 Text = "Onayla",
-                Location = new Point(325, y + 60),
+                Location = new Point(325, y + 20),
                 Width = 150,
                 Height = 40
             };
@@ -273,10 +335,10 @@ namespace UI.WinFormsApp
             Controls.Add(btnOnayla);
 
             cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
-            cmbPeriod.SelectedIndex = 0; // Select "Günlük"
+            cmbPeriod.SelectedIndex = 0; // Select "Günlük" by default
             CmbPeriod_SelectedIndexChanged(cmbPeriod, EventArgs.Empty);
-
         }
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
