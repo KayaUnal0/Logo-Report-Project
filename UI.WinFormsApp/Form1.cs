@@ -217,53 +217,80 @@ namespace UI.WinFormsApp
         {
             this.Text = "Rapor Planlayıcı";
             this.Size = new Size(600, 750);
+            this.MinimumSize = this.Size;
+
 
             int labelX = 30;
             int controlX = 180;
             int y = 20;
             int spacing = 35;
 
+            //Rapor Başlığı
             Controls.Add(new Label { Text = "Rapor Başlığı", Location = new Point(labelX, y), AutoSize = true });
-            txtReportTitle = new TextBox { Location = new Point(controlX, y), Width = 300 };
+            txtReportTitle = new TextBox 
+            { 
+                Location = new Point(controlX, y), 
+                Width = 300,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
             Controls.Add(txtReportTitle);
             y += spacing;
 
+            //Rapor Sorgusu
             Controls.Add(new Label { Text = "Rapor Sorgusu", Location = new Point(labelX, y), AutoSize = true });
-            rtbSqlQuery = new RichTextBox { Location = new Point(controlX, y), Size = new Size(300, 100) };
+            rtbSqlQuery = new RichTextBox 
+            { 
+                Location = new Point(controlX, y), 
+                Size = new Size(300, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
             Controls.Add(rtbSqlQuery);
             y += 110;
 
+            //E-posta
             Controls.Add(new Label { Text = "E-Posta", Location = new Point(labelX, y), AutoSize = true });
-            txtEmail = new TextBox { Location = new Point(controlX, y), Width = 300, Text = "xxx@logocom.tr" };
+            txtEmail = new TextBox 
+            { 
+                Location = new Point(controlX, y), 
+                Width = 300, 
+                Text = "xxx@logocom.tr",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
             Controls.Add(txtEmail);
             y += spacing;
 
+            //Dizin
             Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
             txtDirectory = new TextBox
             {
                 Location = new Point(controlX, y),
                 Width = 220,
-                PlaceholderText = "İsteğe bağlı"
+                PlaceholderText = "İsteğe bağlı",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             Controls.Add(txtDirectory);
 
+            //Gözat butonu
             var btnBrowse = new Button
             {
                 Text = "Gözat...",
                 Location = new Point(controlX + 230, y),
                 Width = 70,
-                Height = 25
+                Height = 25,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             btnBrowse.Click += BtnBrowse_Click;
             Controls.Add(btnBrowse);
             y += spacing;
 
+            //Period
             Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
             cmbPeriod = new ComboBox
             {
                 Location = new Point(controlX, y),
                 Width = 300,
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             cmbPeriod.Items.AddRange(new string[] { "Günlük", "Haftalık", "Aylık" });
             Controls.Add(cmbPeriod);
@@ -299,7 +326,8 @@ namespace UI.WinFormsApp
                 Name = "dtpDate",
                 Format = DateTimePickerFormat.Short,
                 Location = new Point(controlX, y),
-                Width = 200
+                Width = 200,
+                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             });
             y += spacing;
 
@@ -309,7 +337,8 @@ namespace UI.WinFormsApp
                 Name = "lblTime",
                 Text = "Saat",
                 Location = new Point(labelX, y),
-                AutoSize = true
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             Controls.Add(lblTime);
 
@@ -319,7 +348,8 @@ namespace UI.WinFormsApp
                 Format = DateTimePickerFormat.Time,
                 ShowUpDown = true,
                 Location = new Point(controlX, y),
-                Width = 200
+                Width = 200,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             });
             y += spacing;
 
@@ -329,7 +359,8 @@ namespace UI.WinFormsApp
                 Text = "Onayla",
                 Location = new Point(325, y + 20),
                 Width = 150,
-                Height = 40
+                Height = 40,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             };
             btnOnayla.Click += BtnOnayla_Click;
             Controls.Add(btnOnayla);

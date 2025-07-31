@@ -108,7 +108,7 @@ namespace Infrastructure.Logic.Hangfire
             }
             else if (period == "aylık")
             {
-                int dayOfMonth = report.CreatedAt.Day; // Or make this user-selected later
+                int dayOfMonth = report.CreatedAt.Day; 
                 var cron = CronUtils.MonthlyCron(time, dayOfMonth);
                 var jobId = $"report:{Slugify(report.Subject)}:monthly";
 
@@ -119,8 +119,6 @@ namespace Infrastructure.Logic.Hangfire
                 );
             }
         }
-
-
 
         public void RemoveRecurringJob(string jobId)
         {

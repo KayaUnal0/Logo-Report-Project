@@ -44,50 +44,6 @@ namespace Logo_Project
             SetupLayout();
         }
 
-        private void SetupLayout()
-        {
-            this.Text = "Ana Ekran";
-            this.Size = new Size(600, 500);
-
-            var btnNew = new Button
-            {
-                Text = "Yeni Rapor Oluştur",
-                Location = new Point(20, 20),
-                Size = new Size(180, 40)
-            };
-            btnNew.Click += BtnNew_Click;
-            Controls.Add(btnNew);
-
-            var btnEdit = new Button
-            {
-                Text = "Düzenle",
-                Location = new Point(20, 380),
-                Size = new Size(100, 30)
-            };
-            btnEdit.Click += BtnEdit_Click;
-            Controls.Add(btnEdit);
-
-            var btnDelete = new Button
-            {
-                Text = "Sil",
-                Location = new Point(130, 380),
-                Size = new Size(100, 30)
-            };
-            btnDelete.Click += BtnDelete_Click;
-            Controls.Add(btnDelete);
-
-            dataGridViewReports = new DataGridView
-            {
-                Location = new Point(20, 90),
-                Size = new Size(540, 250),
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                ReadOnly = true,
-                AllowUserToAddRows = false
-            };
-            Controls.Add(dataGridViewReports);
-
-            LoadReportsGrid();
-        }
         private void LoadReportsGrid()
         {
             _reports = _reportRepository.GetReports();
@@ -107,7 +63,7 @@ namespace Logo_Project
         {
             var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
             form.ShowDialog();
-            LoadReportsGrid(); 
+            LoadReportsGrid();
         }
 
         private void BtnEdit_Click(object sender, EventArgs e)
@@ -144,6 +100,60 @@ namespace Logo_Project
                 _reportRepository.DeleteReport(selected.Subject);
                 LoadReportsGrid();
             }
+        }
+
+        private void SetupLayout()
+        {
+            this.Text = "Ana Ekran";
+            this.Size = new Size(800, 620);
+            this.MinimumSize = new Size(500, 620);
+
+            // Yeni Rapor Butonu
+            var btnNew = new Button
+            {
+                Text = "Yeni Rapor Oluştur",
+                Location = new Point(20, 20),
+                Size = new Size(180, 40),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            btnNew.Click += BtnNew_Click;
+            Controls.Add(btnNew);
+
+            // Düzenle Butonu
+            var btnEdit = new Button
+            {
+                Text = "Düzenle",
+                Location = new Point(20, 480),
+                Size = new Size(140, 35),
+                Anchor = AnchorStyles.Left | AnchorStyles.Bottom
+            };
+            btnEdit.Click += BtnEdit_Click;
+            Controls.Add(btnEdit);
+
+            // Sil Butonu
+            var btnDelete = new Button
+            {
+                Text = "Sil",
+                Location = new Point(180, 480),
+                Size = new Size(140, 35),
+                Anchor = AnchorStyles.Left | AnchorStyles.Bottom
+            };
+            btnDelete.Click += BtnDelete_Click;
+            Controls.Add(btnDelete);
+
+            //Grid
+            dataGridViewReports = new DataGridView
+            {
+                Location = new Point(20, 90),
+                Size = new Size(740, 340),
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                ReadOnly = true,
+                AllowUserToAddRows = false,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+            Controls.Add(dataGridViewReports);
+
+            LoadReportsGrid();
         }
 
 
