@@ -4,6 +4,8 @@ namespace Core.Interfaces
 {
     public interface IFileSaver
     {
-        string SaveReportToFile(string directoryPath, string fileName, List<string> lines);
+        string SaveCsvToFile(string directoryPath, string fileName, List<string> lines);
+        string SaveHtmlToFile(string directoryPath, string fileName, string htmlContent);
+
     }
 }

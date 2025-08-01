@@ -16,5 +16,7 @@ namespace Common.Shared.Dtos
 
         public string JsonContent { get; set; }       
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string FileType { get; set; } // "Excel", "html", or "her ikisi de"
+
     }
 }

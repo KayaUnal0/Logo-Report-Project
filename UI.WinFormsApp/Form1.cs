@@ -56,6 +56,11 @@ namespace UI.WinFormsApp
 
                 var report = isEditMode ? currentReport : new ReportDto();
 
+                // Get file type selection
+                var cmbFileType = Controls.Find("cmbFileType", true).FirstOrDefault() as ComboBox;
+                report.FileType = cmbFileType?.SelectedItem?.ToString() ?? "Excel";
+
+                // Collect report data
                 report.Email = txtEmail.Text;
                 report.Subject = txtReportTitle.Text;
                 report.Query = rtbSqlQuery.Text;
@@ -65,44 +70,107 @@ namespace UI.WinFormsApp
                     .Select(cb => Enum.Parse<WeekDay>(cb.Text, ignoreCase: true))
                     .ToList();
 
+                // Execute SQL query
                 var result = _sqlQueryRunner.ExecuteQuery(report.Query);
+
+                // File paths and template rendering
+                string csvPath = null;
+                string htmlPath = null;
+                string htmlContent = null;
+                string templatePath = "Templates/EmailTemplate.sbn";
+
                 if (!isEditMode)
                 {
                     report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
 
                     if (!string.IsNullOrEmpty(report.Directory))
                     {
-                        var fileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-                        var filePath = _fileSaver.SaveReportToFile(report.Directory, fileName, result.Results);
+                        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        var fileBaseName = $"Report_{timestamp}";
+
+                        // Save CSV if needed
+                        if (report.FileType.Contains("Excel"))
+                        {
+                            csvPath = _fileSaver.SaveCsvToFile(
+                                report.Directory,
+                                fileBaseName + ".csv",
+                                result.Results
+                            );
+                        }
+
+                        // Save HTML if needed
+                        if (report.FileType.Contains("HTML"))
+                        {
+                            htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
+                            {
+                                subject = report.Subject,
+                                status = result.Status.ToString(),
+                                results = string.Join("\n", result.Results),
+                                filePath = report.Directory
+                            });
+
+                            htmlPath = _fileSaver.SaveHtmlToFile(
+                                report.Directory,
+                                fileBaseName + ".html",
+                                htmlContent
+                            );
+                        }
                     }
                 }
 
-                var templatePath = "Templates/EmailTemplate.sbn";
-                var body = await _templateRenderer.RenderTemplateAsync(templatePath, new
+                // Prepare email body
+                string emailBody;
+                if (report.FileType == "HTML" || report.FileType == "Excel, HTML")
                 {
-                    subject = report.Subject,
-                    status = result.Status.ToString(),
-                    results = string.Join("\n", result.Results),
-                    filePath = report.Directory
-                });
+                    if (htmlContent == null)
+                    {
+                        htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
+                        {
+                            subject = report.Subject,
+                            status = result.Status.ToString(),
+                            results = string.Join("\n", result.Results),
+                            filePath = report.Directory
+                        });
+                    }
 
-                BackgroundJob.Enqueue(() => EmailJobWrapper.SendEmail(report.Email, report.Subject, body));
+                    emailBody = htmlContent;
+                }
+                else
+                {
+                    // CSV-only fallback
+                    emailBody = string.Join("<br>", result.Results);
+                }
 
+                // Prepare attachments
+                var attachments = new List<string>();
+                if (!string.IsNullOrEmpty(csvPath))
+                    attachments.Add(csvPath);
+                if (!string.IsNullOrEmpty(htmlPath))
+                    attachments.Add(htmlPath);
+
+                // Send email in background
+                BackgroundJob.Enqueue(() =>
+                    EmailJobWrapper.SendEmail(report.Email, report.Subject, emailBody, attachments.ToArray()));
+
+                // Save or update report
                 if (isEditMode)
                     _reportRepository.UpdateReport(_originalTitle, report);
                 else
                     _reportRepository.SaveReport(report);
 
-                // Before scheduling new jobs
+                // Remove previous jobs
                 foreach (WeekDay day in Enum.GetValues(typeof(WeekDay)))
                 {
                     var jobId = $"report:{report.Subject}:{day}";
                     RecurringJob.RemoveIfExists(jobId);
                 }
 
+                // Schedule recurring jobs
                 _hangfireManager.ScheduleRecurringEmailJobs(report);
 
-                MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.",
+                    "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                 Log.Information("Email job enqueued for {Email}", report.Email);
                 Close();
             }
@@ -112,6 +180,8 @@ namespace UI.WinFormsApp
                 MessageBox.Show("İşlem sırasında hata oluştu: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+
 
         public void LoadReport(ReportDto report)
         {
@@ -351,6 +421,19 @@ namespace UI.WinFormsApp
                 Width = 200,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             });
+            y += spacing;
+
+            Controls.Add(new Label { Text = "Dosya türü", Location = new Point(labelX, y), AutoSize = true });
+            var cmbFileType = new ComboBox
+            {
+                Name = "cmbFileType",
+                Location = new Point(controlX, y),
+                Width = 300,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cmbFileType.Items.AddRange(new string[] { "Excel", "HTML", "Excel, HTML" });
+            cmbFileType.SelectedIndex = 0;
+            Controls.Add(cmbFileType);
             y += spacing;
 
             var btnOnayla = new Button

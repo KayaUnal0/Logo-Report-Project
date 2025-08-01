@@ -9,4 +9,8 @@
 	<p>
 		<strong>Dizin:</strong> {{ filePath }}
 	</p>
+	<p>
+		<em>Rapor CSV formatında eklenmiştir. Excel'de açabilirsiniz.</em>
+	</p>
+
 </div>

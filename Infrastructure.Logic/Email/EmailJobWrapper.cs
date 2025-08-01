@@ -26,4 +26,17 @@ public static class EmailJobWrapper
 
         sender.Send(email, subject, body);
     }
+
+    public static void SendEmail(string email, string subject, string body, string[] attachments)
+    {
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        var settings = config.GetSection("EmailSettings").Get<EmailSettings>();
+        var sender = new EmailSender(settings);
+        sender.Send(email, subject, body, attachments);
+    }
+
 }

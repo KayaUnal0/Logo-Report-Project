@@ -16,7 +16,8 @@ namespace Infrastructure.Logic.Email
             _settings = settings;
         }
 
-        public bool Send(string toAddress, string subject, string body, string attachmentPath = null)
+        public bool Send(string toAddress, string subject, string body, string[] attachmentPaths = null)
+
         {
             try
             {
@@ -38,9 +39,15 @@ namespace Infrastructure.Logic.Email
                 };
                 mail.To.Add(toAddress);
 
-                if (!string.IsNullOrEmpty(attachmentPath) && File.Exists(attachmentPath))
+                if (attachmentPaths != null)
                 {
-                    mail.Attachments.Add(new Attachment(attachmentPath));
+                    foreach (var path in attachmentPaths)
+                    {
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            mail.Attachments.Add(new Attachment(path));
+                        }
+                    }
                 }
 
                 using var smtpClient = new SmtpClient(_settings.SmtpServer, _settings.SmtpPort)

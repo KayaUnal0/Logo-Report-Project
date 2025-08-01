@@ -39,16 +39,44 @@ namespace Infrastructure.Logic.Jobs
 
                 var result = sqlRunner.ExecuteQuery(report.Query);
 
-                var templatePath = "Templates/EmailTemplate.sbn";
-                var body = templateRenderer.RenderTemplateAsync(templatePath, new
-                {
-                    subject = report.Subject,
-                    status = result.Status.ToString(),
-                    results = string.Join("\n", result.Results),
-                    filePath = report.Directory
-                }).Result;
+                string htmlBody = null;
+                var attachments = new List<string>();
+                string safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
+                var fileSaver = new FileSaver();
 
-                sender.Send(report.Email, report.Subject, body);
+                // Save CSV if Excel or Excel+HTML
+                if (report.FileType.Contains("Excel"))
+                {
+                    var csvPath = fileSaver.SaveCsvToFile(report.Directory, safeFileName + ".csv", result.Results);
+                    if (!string.IsNullOrEmpty(csvPath))
+                        attachments.Add(csvPath);
+                }
+
+                // Save HTML if HTML or Excel+HTML
+                if (report.FileType.Contains("HTML"))
+                {
+                    htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
+                    {
+                        subject = report.Subject,
+                        status = result.Status.ToString(),
+                        results = string.Join("\n", result.Results),
+                        filePath = report.Directory
+                    }).Result;
+
+                    // Save HTML version to file too
+                    var htmlPath = Path.Combine(report.Directory, safeFileName + ".html");
+                    File.WriteAllText(htmlPath, htmlBody);
+                    attachments.Add(htmlPath);
+                }
+
+                // Send email with all attachments
+                sender.Send(
+                    report.Email,
+                    report.Subject,
+                    htmlBody ?? "Rapor ektedir.",
+                    attachments.ToArray()
+                );
+
                 Log.Information("Recurring report sent for {Subject} on {Day}", reportSubject, dayString);
             }
             catch (Exception ex)
@@ -56,5 +84,7 @@ namespace Infrastructure.Logic.Jobs
                 Log.Error(ex, "Error executing recurring report for {Subject} on {Day}", reportSubject, dayString);
             }
         }
+
+
     }
 }
