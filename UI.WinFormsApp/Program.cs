@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Windows.Forms;
 using UI.WinFormsApp;
+using Hangfire.SqlServer;
 
 namespace Logo_Project
 {
@@ -23,8 +24,12 @@ namespace Logo_Project
             // Logging configuration
             LoggerConfig.Configure();
 
+            string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
+
             // Setup Hangfire to use memory storage
-            GlobalConfiguration.Configuration.UseMemoryStorage();
+            GlobalConfiguration.Configuration
+                .UseSqlServerStorage(connectionString);
+
             using var server = new BackgroundJobServer();
 
             var config = new ConfigurationBuilder()
@@ -43,8 +48,13 @@ namespace Logo_Project
             var hangfireManager = new HangfireServerManager(emailJob);
             var fileSaver = new FileSaver();
             var templateRenderer = new TemplateRenderer();
-            string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
             var reportRepository = new ReportRepository(connectionString);
+
+            var allReports = reportRepository.GetReports();
+            foreach (var report in allReports.Where(r => r.Aktif)) 
+            {
+                hangfireManager.ScheduleRecurringEmailJobs(report);
+            }
 
             ApplicationConfiguration.Initialize();
             Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));

@@ -119,27 +119,18 @@ namespace UI.WinFormsApp
                 }
 
                 // Prepare email body
-                string emailBody;
-                if (report.FileType == "HTML" || report.FileType == "Excel, HTML")
+                if (htmlContent == null)
                 {
-                    if (htmlContent == null)
+                    htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
                     {
-                        htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
-                        {
-                            subject = report.Subject,
-                            status = result.Status.ToString(),
-                            results = string.Join("\n", result.Results),
-                            filePath = report.Directory
-                        });
-                    }
+                        subject = report.Subject,
+                        status = result.Status.ToString(),
+                        results = string.Join("\n", result.Results),
+                        filePath = report.Directory
+                    });
+                }
 
-                    emailBody = htmlContent;
-                }
-                else
-                {
-                    // CSV-only fallback
-                    emailBody = string.Join("<br>", result.Results);
-                }
+                string emailBody = htmlContent;
 
                 // Prepare attachments
                 var attachments = new List<string>();
@@ -423,30 +414,35 @@ namespace UI.WinFormsApp
             });
             y += spacing;
 
+            // File type section
             Controls.Add(new Label { Text = "Dosya türü", Location = new Point(labelX, y), AutoSize = true });
             var cmbFileType = new ComboBox
             {
                 Name = "cmbFileType",
                 Location = new Point(controlX, y),
                 Width = 300,
-                DropDownStyle = ComboBoxStyle.DropDownList
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             cmbFileType.Items.AddRange(new string[] { "Excel", "HTML", "Excel, HTML" });
             cmbFileType.SelectedIndex = 0;
             Controls.Add(cmbFileType);
             y += spacing;
 
+            //Onayla button 
             var btnOnayla = new Button
             {
                 Name = "btnOnayla",
                 Text = "Onayla",
-                Location = new Point(325, y + 20),
+                Location = new Point(controlX + 145, y),
                 Width = 150,
                 Height = 40,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             };
             btnOnayla.Click += BtnOnayla_Click;
             Controls.Add(btnOnayla);
+
+
 
             cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
             cmbPeriod.SelectedIndex = 0; // Select "Günlük" by default
