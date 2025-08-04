@@ -344,6 +344,32 @@ namespace UI.WinFormsApp
             Controls.Add(btnBrowse);
             y += spacing;
 
+
+            // Dosya türü (label)
+            var lblFile = new Label
+            {
+                Name = "lblFile",
+                Text = "Dosya türü",
+                Location = new Point(labelX, y),
+                AutoSize = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            Controls.Add(lblFile);
+
+            // Dosya türü (combobox)
+            var cmbFileType = new ComboBox
+            {
+                Name = "cmbFileType",
+                Location = new Point(controlX, y),
+                Width = 300,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            cmbFileType.Items.AddRange(new string[] { "Excel", "HTML", "Excel, HTML" });
+            cmbFileType.SelectedIndex = 0;
+            Controls.Add(cmbFileType);
+            y += spacing;
+
             //Period
             Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
             cmbPeriod = new ComboBox
@@ -372,7 +398,7 @@ namespace UI.WinFormsApp
             }
             y += 8 * 25;
 
-            // Gün (label) — for Aylık
+            // Gün (label)
             var lblDay = new Label
             {
                 Name = "lblDay",
@@ -388,11 +414,11 @@ namespace UI.WinFormsApp
                 Format = DateTimePickerFormat.Short,
                 Location = new Point(controlX, y),
                 Width = 200,
-                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             });
             y += spacing;
 
-            // Saat (label) — for all
+            // Saat (label)
             var lblTime = new Label
             {
                 Name = "lblTime",
@@ -412,22 +438,9 @@ namespace UI.WinFormsApp
                 Width = 200,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             });
-            y += spacing;
+            y += spacing; 
 
-            // File type section
-            Controls.Add(new Label { Text = "Dosya türü", Location = new Point(labelX, y), AutoSize = true });
-            var cmbFileType = new ComboBox
-            {
-                Name = "cmbFileType",
-                Location = new Point(controlX, y),
-                Width = 300,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            cmbFileType.Items.AddRange(new string[] { "Excel", "HTML", "Excel, HTML" });
-            cmbFileType.SelectedIndex = 0;
-            Controls.Add(cmbFileType);
-            y += spacing;
+
 
             //Onayla button 
             var btnOnayla = new Button
@@ -441,8 +454,6 @@ namespace UI.WinFormsApp
             };
             btnOnayla.Click += BtnOnayla_Click;
             Controls.Add(btnOnayla);
-
-
 
             cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
             cmbPeriod.SelectedIndex = 0; // Select "Günlük" by default

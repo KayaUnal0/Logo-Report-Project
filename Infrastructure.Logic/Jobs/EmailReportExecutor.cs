@@ -9,6 +9,8 @@ using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Templates;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Infrastructure.Logic.Jobs
 {
@@ -44,6 +46,15 @@ namespace Infrastructure.Logic.Jobs
                 string safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
                 var fileSaver = new FileSaver();
 
+                // render the HTML body for the email
+                htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
+                {
+                    subject = report.Subject,
+                    status = result.Status.ToString(),
+                    results = string.Join("\n", result.Results),
+                    filePath = report.Directory
+                }).Result;
+
                 // Save CSV if Excel or Excel+HTML
                 if (report.FileType.Contains("Excel"))
                 {
@@ -52,28 +63,19 @@ namespace Infrastructure.Logic.Jobs
                         attachments.Add(csvPath);
                 }
 
-                // Save HTML if HTML or Excel+HTML
+                // Save HTML file if HTML or Excel+HTML
                 if (report.FileType.Contains("HTML"))
                 {
-                    htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
-                    {
-                        subject = report.Subject,
-                        status = result.Status.ToString(),
-                        results = string.Join("\n", result.Results),
-                        filePath = report.Directory
-                    }).Result;
-
-                    // Save HTML version to file too
                     var htmlPath = Path.Combine(report.Directory, safeFileName + ".html");
                     File.WriteAllText(htmlPath, htmlBody);
                     attachments.Add(htmlPath);
                 }
 
-                // Send email with all attachments
+                // Send email with attachments and the rendered template as body
                 sender.Send(
                     report.Email,
                     report.Subject,
-                    htmlBody ?? "Rapor ektedir.",
+                    htmlBody,
                     attachments.ToArray()
                 );
 
@@ -84,7 +86,5 @@ namespace Infrastructure.Logic.Jobs
                 Log.Error(ex, "Error executing recurring report for {Subject} on {Day}", reportSubject, dayString);
             }
         }
-
-
     }
 }

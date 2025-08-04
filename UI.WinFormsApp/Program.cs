@@ -1,6 +1,8 @@
-﻿using Core.Interfaces;
+﻿using Common.Shared;
+using Core.Interfaces;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using Hangfire.SqlServer;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Filesystem;
@@ -9,10 +11,10 @@ using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Logging;
 using Infrastructure.Logic.Templates;
 using Microsoft.Extensions.Configuration;
+using Serilog.Events;
 using System;
 using System.Windows.Forms;
 using UI.WinFormsApp;
-using Hangfire.SqlServer;
 
 namespace Logo_Project
 {
@@ -22,7 +24,12 @@ namespace Logo_Project
         static void Main()
         {
             // Logging configuration
-            LoggerConfig.Configure();
+            LoggerConfig.Instance.Init(new LoggerSettings
+            {
+                ProjectName = "Logo_Project",
+                FilePath = "Logs/logo-project-log-.txt",
+                MinimumLevel = LogEventLevel.Information
+            });
 
             string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
 

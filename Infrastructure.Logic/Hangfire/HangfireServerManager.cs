@@ -89,7 +89,7 @@ namespace Infrastructure.Logic.Hangfire
                 RecurringJob.AddOrUpdate(
                     jobId,
                     () => EmailReportExecutor.Execute(report.Subject, "daily"),
-                    cron
+                    Cron.Minutely()
                 );
             }
             else if (period == "haftalık")
