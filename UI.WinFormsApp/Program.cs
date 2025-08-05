@@ -10,6 +10,7 @@ using Infrastructure.Logic.Hangfire;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Logging;
 using Infrastructure.Logic.Templates;
+using Logo_Project.Logging;
 using Microsoft.Extensions.Configuration;
 using Serilog.Events;
 using System;
@@ -24,12 +25,23 @@ namespace Logo_Project
         static void Main()
         {
             // Logging configuration
-            LoggerConfig.Instance.Init(new LoggerSettings
+            // Setup logger settings
+            var uiLoggerSettings = new LoggerSettings
             {
-                ProjectName = "Logo_Project",
-                FilePath = "Logs/logo-project-log-.txt",
+                ProjectName = "UI",
+                FilePath = "Logs/ui-winforms-log-.txt",
                 MinimumLevel = LogEventLevel.Information
-            });
+            };
+
+            var infraLoggerSettings = new LoggerSettings
+            {
+                ProjectName = "Infrastructure",
+                FilePath = "Logs/infrastructure-log-.txt",
+                MinimumLevel = LogEventLevel.Debug
+            };
+
+            UIWinFormsLoggerConfig.Instance.Init(uiLoggerSettings);
+            InfrastructureLoggerConfig.Instance.Init(infraLoggerSettings);
 
             string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
 

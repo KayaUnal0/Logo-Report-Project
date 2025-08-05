@@ -1,29 +1,31 @@
 ﻿using Serilog;
-using System;
+using Serilog.Events;
+using Common.Shared;
 
 namespace Infrastructure.Logic.Logging
 {
-    public sealed class LoggerConfig
+    public sealed class InfrastructureLoggerConfig
     {
-        private static LoggerConfig _instance;
+        private static InfrastructureLoggerConfig _instance;
         private static readonly object _lock = new();
-
         private bool _isInitialized = false;
 
-        private LoggerConfig() { }
+        public ILogger Logger { get; private set; }
 
-        public static LoggerConfig Instance
+        private InfrastructureLoggerConfig() { }
+
+        public static InfrastructureLoggerConfig Instance
         {
             get
             {
                 lock (_lock)
                 {
-                    return _instance ??= new LoggerConfig();
+                    return _instance ??= new InfrastructureLoggerConfig();
                 }
             }
         }
 
-        public void Init(Common.Shared.LoggerSettings settings)
+        public void Init(LoggerSettings settings)
         {
             if (_isInitialized) return;
 
@@ -31,14 +33,15 @@ namespace Infrastructure.Logic.Logging
             {
                 if (_isInitialized) return;
 
-                Log.Logger = new LoggerConfiguration()
+                Logger = new LoggerConfiguration()
                     .MinimumLevel.Is(settings.MinimumLevel)
                     .WriteTo.Console()
                     .WriteTo.File(settings.FilePath, rollingInterval: RollingInterval.Day)
+                    .Enrich.WithProperty("Project", settings.ProjectName)
                     .CreateLogger();
 
                 _isInitialized = true;
-                Log.Information("Logger initialized for project: {Project}", settings.ProjectName);
+                Logger.Information("Infrastructure logger initialized at {Path}", settings.FilePath);
             }
         }
     }

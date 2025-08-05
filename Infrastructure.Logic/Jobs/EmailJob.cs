@@ -1,4 +1,5 @@
 ﻿using Core.Interfaces;
+using Infrastructure.Logic.Logging;
 using Serilog;
 
 namespace Infrastructure.Logic.Jobs
@@ -14,7 +15,7 @@ namespace Infrastructure.Logic.Jobs
 
         public void Send(string to, string subject, string body)
         {
-            Log.Information("Hangfire executing job to send email to {Email}", to);
+            InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire, {Email} adresine e-posta göndermek için görevi yürütüyor.", to);
             _emailSender.Send(to, subject, body);
         }
     }

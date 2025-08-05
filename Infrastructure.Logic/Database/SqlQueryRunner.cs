@@ -1,10 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Common.Shared.Dtos;
+using Common.Shared.Enums;
+using Core.Interfaces;
+using Infrastructure.Logic.Logging;
 using Microsoft.Data.SqlClient;
 using Serilog;
-using Core.Interfaces;
-using Common.Shared.Dtos;
-using Common.Shared.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace Infrastructure.Logic.Database
 {
@@ -29,7 +30,7 @@ namespace Infrastructure.Logic.Database
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
-                    Log.Information("Veritabanına bağlantı sağlandı.");
+                    InfrastructureLoggerConfig.Instance.Logger.Information("Veritabanına bağlantı sağlandı.");
 
                     using (var command = new SqlCommand(sql, connection))
                     using (var reader = command.ExecuteReader())
@@ -56,11 +57,11 @@ namespace Infrastructure.Logic.Database
                 }
 
                 result.Status = ReportStatus.Sent;
-                Log.Information("SQL sorgusu başarıyla çalıştırıldı.");
+                InfrastructureLoggerConfig.Instance.Logger.Information("SQL sorgusu başarıyla çalıştırıldı.");
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "SQL sorgusu çalıştırılırken hata oluştu.");
+                InfrastructureLoggerConfig.Instance.Logger.Error(ex, "SQL sorgusu çalıştırılırken hata oluştu.");
                 result.Status = ReportStatus.Failed;
                 result.Results.Add("Hata: " + ex.Message);
             }

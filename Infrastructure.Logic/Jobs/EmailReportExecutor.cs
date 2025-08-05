@@ -1,16 +1,17 @@
-﻿using System;
-using System.Linq;
-using Core.Interfaces;
+﻿using Common.Shared.Dtos;
 using Common.Shared.Enums;
-using Common.Shared.Dtos;
+using Core.Interfaces;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Filesystem;
+using Infrastructure.Logic.Logging;
 using Infrastructure.Logic.Templates;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Infrastructure.Logic.Jobs
 {
@@ -35,7 +36,7 @@ namespace Infrastructure.Logic.Jobs
                 var report = reports.FirstOrDefault(r => r.Subject == reportSubject);
                 if (report == null)
                 {
-                    Log.Warning("No report found with subject {Subject}", reportSubject);
+                    InfrastructureLoggerConfig.Instance.Logger.Warning("'{Subject}' başlıklı rapor bulunamadı.", reportSubject);
                     return;
                 }
 
@@ -79,11 +80,11 @@ namespace Infrastructure.Logic.Jobs
                     attachments.ToArray()
                 );
 
-                Log.Information("Recurring report sent for {Subject} on {Day}", reportSubject, dayString);
+                InfrastructureLoggerConfig.Instance.Logger.Information("Zamanlanmış rapor gönderildi: {Subject} ({Day})", reportSubject, dayString);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error executing recurring report for {Subject} on {Day}", reportSubject, dayString);
+                InfrastructureLoggerConfig.Instance.Logger.Error(ex, "Zamanlanmış rapor yürütülürken hata oluştu: {Subject} ({Day})", reportSubject, dayString);
             }
         }
     }

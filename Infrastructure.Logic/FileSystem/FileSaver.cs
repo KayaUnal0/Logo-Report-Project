@@ -1,4 +1,5 @@
 ﻿using Core.Interfaces;
+using Infrastructure.Logic.Logging;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ namespace Infrastructure.Logic.Filesystem
 
             var fullPath = Path.Combine(directoryPath, fileName);
             File.WriteAllLines(fullPath, csvLines);
-            Log.Information("CSV report saved to: {Path}", fullPath);
+            InfrastructureLoggerConfig.Instance.Logger.Information("CSV raporu kaydedildi: {Path}", fullPath);
             return fullPath;
         }
 
@@ -29,7 +30,7 @@ namespace Infrastructure.Logic.Filesystem
         {
             var fullPath = Path.Combine(directoryPath, fileName);
             File.WriteAllText(fullPath, html);
-            Log.Information("HTML report saved to: {Path}", fullPath);
+            InfrastructureLoggerConfig.Instance.Logger.Information("HTML raporu kaydedildi: {Path}", fullPath);
             return fullPath;
         }
     }

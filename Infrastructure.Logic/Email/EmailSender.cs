@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Core.Interfaces;
+using Infrastructure.Logic.Logging;
+using Serilog;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
-using Core.Interfaces;
-using Serilog;
 
 namespace Infrastructure.Logic.Email
 {
@@ -28,7 +29,7 @@ namespace Infrastructure.Logic.Email
                 if (string.IsNullOrWhiteSpace(subject))
                     subject = "Yeni Form Bildirimi";
 
-                Log.Information("E-posta gönderilmeye hazırlanıyor: Alıcı = {Email}, Konu = {Subject}", toAddress, subject);
+                InfrastructureLoggerConfig.Instance.Logger.Information("E-posta gönderilmeye hazırlanıyor: Alıcı = {Email}, Konu = {Subject}", toAddress, subject);
 
                 var mail = new MailMessage
                 {
@@ -57,12 +58,12 @@ namespace Infrastructure.Logic.Email
                 };
 
                 smtpClient.Send(mail);
-                Log.Information("E-posta başarıyla gönderildi: {Email}", toAddress);
+                InfrastructureLoggerConfig.Instance.Logger.Information("E-posta başarıyla gönderildi: {Email}", toAddress);
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "E-posta gönderimi sırasında hata oluştu.");
+                InfrastructureLoggerConfig.Instance.Logger.Error(ex, "E-posta gönderimi sırasında hata oluştu.");
                 return false;
             }
         }

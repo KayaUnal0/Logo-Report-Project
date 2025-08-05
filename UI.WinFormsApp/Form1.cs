@@ -7,6 +7,7 @@ using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
+using Logo_Project.Logging;
 using Serilog;
 using System;
 using System.Drawing;
@@ -52,7 +53,7 @@ namespace UI.WinFormsApp
         {
             try
             {
-                Log.Information("Onayla button clicked");
+                UIWinFormsLoggerConfig.Instance.Logger.Information("Onayla butonuna basıldı");
 
                 var report = isEditMode ? currentReport : new ReportDto();
 
@@ -162,12 +163,12 @@ namespace UI.WinFormsApp
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.",
                     "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                Log.Information("Email job enqueued for {Email}", report.Email);
+                UIWinFormsLoggerConfig.Instance.Logger.Information("{Email} için e-posta gönderimi sıraya alındı.", report.Email);
                 Close();
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "E-posta planlaması sırasında hata oluştu.");
+                UIWinFormsLoggerConfig.Instance.Logger.Error(ex, "E-posta planlaması sırasında hata oluştu.");
                 MessageBox.Show("İşlem sırasında hata oluştu: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

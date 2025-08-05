@@ -2,14 +2,15 @@
 using Common.Shared.Enums;
 using Core.Interfaces;
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.MemoryStorage;
+using Hangfire.States;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Jobs;
+using Infrastructure.Logic.Logging;
 using Serilog;
 using System;
 using System.Linq.Expressions;
-using Hangfire.Common;
-using Hangfire.States;
 
 
 namespace Infrastructure.Logic.Hangfire
@@ -30,19 +31,19 @@ namespace Infrastructure.Logic.Hangfire
                 .UseMemoryStorage();
 
             _server = new BackgroundJobServer();
-            Log.Information("Hangfire server started with in-memory storage.");
+            InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu başlatıldı.");
         }
 
         public void Stop()
         {
             _server?.Dispose();
-            Log.Information("Hangfire server stopped.");
+            InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu durduruldu.");
         }
 
         public void Enqueue(Expression<Action> methodCall)
         {
             BackgroundJob.Enqueue(methodCall);
-            Log.Information("Job enqueued to Hangfire.");
+            InfrastructureLoggerConfig.Instance.Logger.Information("Yeni görev Hangfire kuyruğuna eklendi.");
         }
 
         public void EnqueueEmail(string email, string subject, string body)
@@ -89,7 +90,7 @@ namespace Infrastructure.Logic.Hangfire
                 RecurringJob.AddOrUpdate(
                     jobId,
                     () => EmailReportExecutor.Execute(report.Subject, "daily"),
-                    Cron.Minutely()
+                    cron
                 );
             }
             else if (period == "haftalık")
@@ -123,7 +124,7 @@ namespace Infrastructure.Logic.Hangfire
         public void RemoveRecurringJob(string jobId)
         {
             RecurringJob.RemoveIfExists(jobId);
-            Log.Information("Recurring job {JobId} removed.", jobId);
+            InfrastructureLoggerConfig.Instance.Logger.Information("Zamanlanmış görev silindi: {JobId}.", jobId);
         }
 
 

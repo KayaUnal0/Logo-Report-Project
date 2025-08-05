@@ -1,4 +1,5 @@
 ﻿using Core.Interfaces;
+using Infrastructure.Logic.Logging;
 using Serilog;
 
 namespace Infrastructure.Logic.Hangfire
@@ -16,12 +17,12 @@ namespace Infrastructure.Logic.Hangfire
         {
             try
             {
-                Log.Information("Arkaplanda rapor gönderimi başladı: {Email}", email);
+                InfrastructureLoggerConfig.Instance.Logger.Information("Arkaplanda rapor gönderimi başladı: {Email}", email);
                 _emailSender.Send(email, subject, body);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Arkaplanda rapor gönderimi sırasında hata oluştu.");
+                InfrastructureLoggerConfig.Instance.Logger.Error(ex, "Arkaplanda rapor gönderimi sırasında hata oluştu.");
             }
         }
     }
