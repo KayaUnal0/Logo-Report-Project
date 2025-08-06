@@ -62,30 +62,30 @@ namespace Infrastructure.Logic.Hangfire
                 .Where(c => char.IsLetterOrDigit(c) || c == '_')
                 .ToArray());
         }
-
         public void ScheduleRecurringEmailJobs(ReportDto report)
         {
             var time = report.Time;
 
-            var period = report.Period?.Trim().ToLowerInvariant();
-
-            if (period == "günlük")
+            //GÜNLÜK
+            if (report.Period == ReportPeriod.Günlük)
             {
                 var jobId = $"report:{Slugify(report.Subject)}";
                 var cron = CronUtils.DailyCron(time);
 
                 RecurringJob.AddOrUpdate(
                     jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, "daily"),
-                    cron
+                    () => EmailReportExecutor.Execute(report.Subject, report.Period.ToString()),  
+                    Cron.Minutely()
                 );
             }
-            else if (period == "haftalık")
+
+            //HAFTALIK
+            else if (report.Period == ReportPeriod.Haftalık)
             {
                 foreach (var day in report.SelectedDays)
                 {
                     var cron = day.WeeklyCron(time);
-                    var jobId = $"report:{Slugify(report.Subject)}";
+                    var jobId = $"report:{Slugify(report.Subject)}_{day}"; // _{day} so that weekdays dont overwrite each other 
 
                     RecurringJob.AddOrUpdate(
                         jobId,
@@ -94,15 +94,17 @@ namespace Infrastructure.Logic.Hangfire
                     );
                 }
             }
-            else if (period == "aylık")
+
+            //AYLIK
+            else if (report.Period == ReportPeriod.Aylık)
             {
-                int dayOfMonth = report.CreatedAt.Day; 
+                int dayOfMonth = report.CreatedAt.Day;
                 var cron = CronUtils.MonthlyCron(time, dayOfMonth);
                 var jobId = $"report:{Slugify(report.Subject)}";
 
                 RecurringJob.AddOrUpdate(
                     jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, "monthly"),
+                    () => EmailReportExecutor.Execute(report.Subject, report.Period.ToString()),
                     cron
                 );
             }

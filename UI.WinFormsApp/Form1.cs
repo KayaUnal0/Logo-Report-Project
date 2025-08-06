@@ -65,7 +65,15 @@ namespace UI.WinFormsApp
                 report.Email = txtEmail.Text;
                 report.Subject = txtReportTitle.Text;
                 report.Query = rtbSqlQuery.Text;
-                report.Period = cmbPeriod.SelectedItem?.ToString() ?? "";
+                if (Enum.TryParse<ReportPeriod>(cmbPeriod.SelectedItem?.ToString(), out var parsedPeriod))
+                {
+                    report.Period = parsedPeriod;
+                }
+                else
+                {
+                    report.Period = ReportPeriod.Günlük; // default fallback
+                }
+
                 report.SelectedDays = dayCheckboxes
                     .Where(cb => cb.Checked)
                     .Select(cb => Enum.Parse<WeekDay>(cb.Text, ignoreCase: true))
@@ -182,7 +190,8 @@ namespace UI.WinFormsApp
             txtEmail.Text = report.Email;
             rtbSqlQuery.Text = report.Query;
             txtDirectory.Text = report.Directory;
-            cmbPeriod.SelectedItem = report.Period;
+            cmbPeriod.SelectedItem = report.Period.ToString();
+
 
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
@@ -216,16 +225,19 @@ namespace UI.WinFormsApp
 
         private void CmbPeriod_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            string selectedPeriod = cmbPeriod.SelectedItem?.ToString() ?? "";
 
             var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault();
             var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault();
             var lblDay = Controls.Find("lblDay", true).FirstOrDefault();
             var lblTime = Controls.Find("lblTime", true).FirstOrDefault();
 
-            bool isDaily = selectedPeriod == "Günlük";
-            bool isWeekly = selectedPeriod == "Haftalık";
-            bool isMonthly = selectedPeriod == "Aylık";
+            if (!Enum.TryParse<ReportPeriod>(cmbPeriod.SelectedItem?.ToString(), out var selectedPeriod))
+                selectedPeriod = ReportPeriod.Günlük;
+
+            bool isDaily = selectedPeriod == ReportPeriod.Günlük;
+            bool isWeekly = selectedPeriod == ReportPeriod.Haftalık;
+            bool isMonthly = selectedPeriod == ReportPeriod.Aylık;
+
 
             int baseY = cmbPeriod.Location.Y + 40;
 
@@ -385,7 +397,8 @@ namespace UI.WinFormsApp
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
-            cmbPeriod.Items.AddRange(new string[] { "Günlük", "Haftalık", "Aylık" });
+            cmbPeriod.Items.AddRange(Enum.GetNames(typeof(ReportPeriod)));
+
             Controls.Add(cmbPeriod);
             y += spacing;
 

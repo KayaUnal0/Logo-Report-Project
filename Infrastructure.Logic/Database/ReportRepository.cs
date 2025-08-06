@@ -30,7 +30,7 @@ namespace Infrastructure.Logic.Database
             cmd.Parameters.AddWithValue("@Subject", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Query", report.Query ?? "");
             cmd.Parameters.AddWithValue("@Email", report.Email);
-            cmd.Parameters.AddWithValue("@Period", report.Period ?? "");
+            cmd.Parameters.AddWithValue("@Period", report.Period.ToString());
             cmd.Parameters.AddWithValue("@Directory", string.IsNullOrWhiteSpace(report.Directory) ? DBNull.Value : report.Directory);
             cmd.Parameters.AddWithValue("@IsActive", true);
             cmd.Parameters.AddWithValue("@Json", json);
@@ -95,7 +95,7 @@ namespace Infrastructure.Logic.Database
             cmd.Parameters.AddWithValue("@Subject", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Query", report.Query ?? "");
             cmd.Parameters.AddWithValue("@Email", report.Email);
-            cmd.Parameters.AddWithValue("@Period", report.Period ?? "");
+            cmd.Parameters.AddWithValue("@Period", report.Period.ToString());
             cmd.Parameters.AddWithValue("@Directory", string.IsNullOrWhiteSpace(report.Directory) ? DBNull.Value : report.Directory);
             cmd.Parameters.AddWithValue("@IsActive", true);
             cmd.Parameters.AddWithValue("@Json", json);
