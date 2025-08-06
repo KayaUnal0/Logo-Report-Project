@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Builder;
 using Serilog;
 using System;
 using System.Linq.Expressions;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 
 namespace Infrastructure.Logic.Hangfire
@@ -64,8 +65,7 @@ namespace Infrastructure.Logic.Hangfire
 
         public void ScheduleRecurringEmailJobs(ReportDto report)
         {
-            // Parse time (fallback to 09:00 if not available)
-            var time = report.CreatedAt.TimeOfDay;
+            var time = report.Time;
 
             var period = report.Period?.Trim().ToLowerInvariant();
 

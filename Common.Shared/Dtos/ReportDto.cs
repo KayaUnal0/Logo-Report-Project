@@ -12,7 +12,8 @@ namespace Common.Shared.Dtos
         public bool Aktif { get; set; }               // aktif (checkbox)
 
         public string Query { get; set; }           
-        public List<WeekDay> SelectedDays { get; set; } = new(); 
+        public List<WeekDay> SelectedDays { get; set; } = new();
+        public TimeSpan Time { get; set; } = new TimeSpan(9, 0, 0); // default to 09:00
 
         public string JsonContent { get; set; }       
         public DateTime CreatedAt { get; set; } = DateTime.Now;

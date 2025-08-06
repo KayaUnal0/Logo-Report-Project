@@ -143,10 +143,17 @@ namespace UI.WinFormsApp
                 if (!string.IsNullOrEmpty(htmlPath))
                     attachments.Add(htmlPath);
 
+                var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
+                if (dtpTime != null)
+                {
+                    report.Time = dtpTime.Value.TimeOfDay;
+                }
+
                 // Save or update report
                 if (isEditMode)
                     _reportRepository.UpdateReport(_originalTitle, report);
                 else
+
                     _reportRepository.SaveReport(report);
 
                 // Schedule recurring jobs
@@ -180,6 +187,12 @@ namespace UI.WinFormsApp
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
             _originalTitle = report.Subject;
+
+            var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
+            if (dtpTime != null)
+            {
+                dtpTime.Value = DateTime.Today.Add(report.Time);
+            }
 
             foreach (var cb in dayCheckboxes)
             {
