@@ -3,9 +3,12 @@ using System;
 
 public static class CronUtils
 {
-    public static string ToCron(this WeekDay day, TimeSpan time)
+    public static string DailyCron(TimeSpan time)
     {
-        // Map .NET DayOfWeek to cron format (0 = Sunday)
+        return $"{time.Minutes} {time.Hours} * * *";
+    }
+    public static string WeeklyCron(this WeekDay day, TimeSpan time)
+    {
         var cronDay = day switch
         {
             WeekDay.Pazar => 0,
@@ -19,11 +22,6 @@ public static class CronUtils
         };
 
         return $"{time.Minutes} {time.Hours} * * {cronDay}";
-    }
-
-    public static string DailyCron(TimeSpan time)
-    {
-        return $"{time.Minutes} {time.Hours} * * *";
     }
 
     public static string MonthlyCron(TimeSpan time, int dayOfMonth)

@@ -97,7 +97,7 @@ namespace Infrastructure.Logic.Hangfire
             {
                 foreach (var day in report.SelectedDays)
                 {
-                    var cron = day.ToCron(time);
+                    var cron = day.WeeklyCron(time);
                     var jobId = GenerateSafeJobId(report.Subject, day);
 
                     RecurringJob.AddOrUpdate(
