@@ -80,44 +80,44 @@ namespace UI.WinFormsApp
                 string htmlContent = null;
                 string templatePath = "Templates/EmailTemplate.sbn";
 
+                // Use provided directory or keep the one already in report
                 if (!isEditMode)
-                {
                     report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
 
-                    if (!string.IsNullOrEmpty(report.Directory))
+                if (!string.IsNullOrEmpty(report.Directory))
+                {
+                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    var fileBaseName = $"Report_{timestamp}";
+
+                    // Save CSV if needed
+                    if (report.FileType.Contains("Excel"))
                     {
-                        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        var fileBaseName = $"Report_{timestamp}";
+                        csvPath = _fileSaver.SaveCsvToFile(
+                            report.Directory,
+                            fileBaseName + ".csv",
+                            result.Results
+                        );
+                    }
 
-                        // Save CSV if needed
-                        if (report.FileType.Contains("Excel"))
+                    // Save HTML if needed
+                    if (report.FileType.Contains("HTML"))
+                    {
+                        htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
                         {
-                            csvPath = _fileSaver.SaveCsvToFile(
-                                report.Directory,
-                                fileBaseName + ".csv",
-                                result.Results
-                            );
-                        }
+                            subject = report.Subject,
+                            status = result.Status.ToString(),
+                            results = string.Join("\n", result.Results),
+                            filePath = report.Directory
+                        });
 
-                        // Save HTML if needed
-                        if (report.FileType.Contains("HTML"))
-                        {
-                            htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
-                            {
-                                subject = report.Subject,
-                                status = result.Status.ToString(),
-                                results = string.Join("\n", result.Results),
-                                filePath = report.Directory
-                            });
-
-                            htmlPath = _fileSaver.SaveHtmlToFile(
-                                report.Directory,
-                                fileBaseName + ".html",
-                                htmlContent
-                            );
-                        }
+                        htmlPath = _fileSaver.SaveHtmlToFile(
+                            report.Directory,
+                            fileBaseName + ".html",
+                            htmlContent
+                        );
                     }
                 }
+
 
                 // Prepare email body
                 if (htmlContent == null)

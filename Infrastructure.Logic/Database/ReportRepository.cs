@@ -24,10 +24,9 @@ namespace Infrastructure.Logic.Database
             conn.Open();
 
             var cmd = new SqlCommand(@"
-            INSERT INTO Reports (Title, Subject, Query, Email, Period, Directory, IsActive, JsonContent)
-            VALUES (@Title, @Subject, @Query, @Email, @Period, @Directory, @IsActive, @Json)", conn);
+            INSERT INTO Reports (Subject, Query, Email, Period, Directory, IsActive, JsonContent)
+            VALUES (@Subject, @Query, @Email, @Period, @Directory, @IsActive, @Json)", conn);
 
-            cmd.Parameters.AddWithValue("@Title", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Subject", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Query", report.Query ?? "");
             cmd.Parameters.AddWithValue("@Email", report.Email);
@@ -67,9 +66,9 @@ namespace Infrastructure.Logic.Database
 
             var cmd = new SqlCommand(@"
             DELETE FROM Reports
-            WHERE Title = @Title", conn);
+            WHERE Subject = @Subject", conn);
 
-            cmd.Parameters.AddWithValue("@Title", subject);
+            cmd.Parameters.AddWithValue("@Subject", subject);
             cmd.ExecuteNonQuery();
         }
 
@@ -83,7 +82,7 @@ namespace Infrastructure.Logic.Database
 
             var cmd = new SqlCommand(@"
             UPDATE Reports
-            SET Title = @Title,
+            SET
                 Subject = @Subject,
                 Query = @Query,
                 Email = @Email,
@@ -91,9 +90,8 @@ namespace Infrastructure.Logic.Database
                 Directory = @Directory,
                 IsActive = @IsActive,
                 JsonContent = @Json
-            WHERE Title = @OriginalTitle", conn);
+            WHERE Subject = @originalSubject", conn);
 
-            cmd.Parameters.AddWithValue("@Title", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Subject", report.Subject ?? "");
             cmd.Parameters.AddWithValue("@Query", report.Query ?? "");
             cmd.Parameters.AddWithValue("@Email", report.Email);
@@ -101,7 +99,7 @@ namespace Infrastructure.Logic.Database
             cmd.Parameters.AddWithValue("@Directory", string.IsNullOrWhiteSpace(report.Directory) ? DBNull.Value : report.Directory);
             cmd.Parameters.AddWithValue("@IsActive", true);
             cmd.Parameters.AddWithValue("@Json", json);
-            cmd.Parameters.AddWithValue("@OriginalTitle", originalTitle);
+            cmd.Parameters.AddWithValue("@originalSubject", originalTitle);
 
             cmd.ExecuteNonQuery();
         }
