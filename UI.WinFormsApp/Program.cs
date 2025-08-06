@@ -11,6 +11,7 @@ using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Logging;
 using Infrastructure.Logic.Templates;
 using Logo_Project.Logging;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Serilog.Events;
 using System;
@@ -69,15 +70,10 @@ namespace Logo_Project
             var templateRenderer = new TemplateRenderer();
             var reportRepository = new ReportRepository(connectionString);
 
-            var allReports = reportRepository.GetReports();
-            foreach (var report in allReports.Where(r => r.Aktif)) 
-            {
-                hangfireManager.ScheduleRecurringEmailJobs(report);
-            }
+            hangfireManager.Start();
 
             ApplicationConfiguration.Initialize();
             Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
         }
-
     }
 }

@@ -56,6 +56,11 @@ namespace Logo_Project
                 Dizin = r.Directory,
                 Aktif = true
             }).ToList();
+
+            foreach (var report in _reports.Where(r => r.Aktif))
+            {
+                _hangfireManager.ScheduleRecurringEmailJobs(report);
+            }
         }
 
 
@@ -98,6 +103,7 @@ namespace Logo_Project
             if (confirm == DialogResult.Yes)
             {
                 _reportRepository.DeleteReport(selected.Subject);
+                _hangfireManager.RemoveRecurringJob(selected.Subject);
                 LoadReportsGrid();
             }
         }

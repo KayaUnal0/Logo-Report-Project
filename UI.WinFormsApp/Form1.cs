@@ -82,7 +82,10 @@ namespace UI.WinFormsApp
 
                 // Use provided directory or keep the one already in report
                 if (!isEditMode)
+                {
+                    report.Aktif = true;
                     report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
+                }
 
                 if (!string.IsNullOrEmpty(report.Directory))
                 {
@@ -140,22 +143,11 @@ namespace UI.WinFormsApp
                 if (!string.IsNullOrEmpty(htmlPath))
                     attachments.Add(htmlPath);
 
-                // Send email in background
-                BackgroundJob.Enqueue(() =>
-                    EmailJobWrapper.SendEmail(report.Email, report.Subject, emailBody, attachments.ToArray()));
-
                 // Save or update report
                 if (isEditMode)
                     _reportRepository.UpdateReport(_originalTitle, report);
                 else
                     _reportRepository.SaveReport(report);
-
-                // Remove previous jobs
-                foreach (WeekDay day in Enum.GetValues(typeof(WeekDay)))
-                {
-                    var jobId = $"report:{report.Subject}:{day}";
-                    RecurringJob.RemoveIfExists(jobId);
-                }
 
                 // Schedule recurring jobs
                 _hangfireManager.ScheduleRecurringEmailJobs(report);
