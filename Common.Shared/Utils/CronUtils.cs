@@ -9,17 +9,7 @@ public static class CronUtils
     }
     public static string WeeklyCron(this WeekDay day, TimeSpan time)
     {
-        var cronDay = day switch
-        {
-            WeekDay.Pazar => 0,
-            WeekDay.Pazartesi => 1,
-            WeekDay.Salı => 2,
-            WeekDay.Çarşamba => 3,
-            WeekDay.Perşembe => 4,
-            WeekDay.Cuma => 5,
-            WeekDay.Cumartesi => 6,
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        var cronDay = (int)day;
 
         return $"{time.Minutes} {time.Hours} * * {cronDay}";
     }
