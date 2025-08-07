@@ -7,11 +7,13 @@ public static class CronUtils
     {
         return $"{time.Minutes} {time.Hours} * * *";
     }
-    public static string WeeklyCron(this WeekDay day, TimeSpan time)
+    public static string WeeklyCron(List<WeekDay> weekDays, TimeSpan time)
     {
-        var cronDay = (int)day;
+        var selectedDays = weekDays.Select(day => ((int)day).ToString());
 
-        return $"{time.Minutes} {time.Hours} * * {cronDay}";
+        var cronDays = string.Join(",", selectedDays);
+
+        return $"{time.Minutes} {time.Hours} * * {cronDays}";
     }
 
     public static string MonthlyCron(TimeSpan time, int dayOfMonth)

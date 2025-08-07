@@ -78,23 +78,18 @@ namespace Infrastructure.Logic.Hangfire
                     cron
                 );
             }
-
             //HAFTALIK
             else if (report.Period == ReportPeriod.Haftalık)
             {
-                foreach (var day in report.SelectedDays)
-                {
-                    var cron = day.WeeklyCron(time);
-                    var jobId = $"report:{Slugify(report.Subject)}_{day}"; // _{day} so that weekdays dont overwrite each other 
+                var cron = CronUtils.WeeklyCron(report.SelectedDays, time);
+                var jobId = $"report:{Slugify(report.Subject)}";
 
-                    RecurringJob.AddOrUpdate(
-                        jobId,
-                        () => EmailReportExecutor.Execute(report.Subject, day.ToString()),
-                        cron
-                    );
-                }
+                RecurringJob.AddOrUpdate(
+                    jobId,
+                    () => EmailReportExecutor.Execute(report.Subject, string.Join(",", report.SelectedDays)),
+                    cron
+                );
             }
-
             //AYLIK
             else if (report.Period == ReportPeriod.Aylık)
             {
