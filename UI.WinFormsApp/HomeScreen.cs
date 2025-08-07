@@ -48,19 +48,7 @@ namespace Logo_Project
         {
             _reports = _reportRepository.GetReports();
 
-            dataGridViewReports.DataSource = _reports.Select(r => new
-            {
-                Başlık = r.Subject,
-                Period = r.Period,
-                Eposta = r.Email,
-                Dizin = r.Directory,
-                Aktif = true
-            }).ToList();
-
-            foreach (var report in _reports.Where(r => r.Active))
-            {
-                _hangfireManager.ScheduleRecurringEmailJobs(report);
-            }
+            dataGridViewReports.DataSource = _reports;
         }
 
 
@@ -153,19 +141,93 @@ namespace Logo_Project
                 Location = new Point(20, 90),
                 Size = new Size(740, 340),
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                ReadOnly = true,
+                ReadOnly = false,
                 AllowUserToAddRows = false,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                AutoGenerateColumns = false
             };
+
+            dataGridViewReports.CurrentCellDirtyStateChanged += DataGridViewReports_CurrentCellDirtyStateChanged;
+            dataGridViewReports.CellValueChanged += DataGridViewReports_CellValueChanged;
+
+
+            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Subject",
+                HeaderText = "Başlık",
+                ReadOnly = true
+            });
+
+            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Period",
+                HeaderText = "Period",
+                ReadOnly = true
+            });
+
+            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Email",
+                HeaderText = "E-Posta",
+                ReadOnly = true
+            });
+
+            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = "Directory",
+                HeaderText = "Dizin",
+                ReadOnly = true
+            });
+
+            dataGridViewReports.Columns.Add(new DataGridViewCheckBoxColumn
+            {
+                DataPropertyName = "Active",
+                HeaderText = "Aktif",
+                ReadOnly = false
+            });
+
             Controls.Add(dataGridViewReports);
 
             LoadReportsGrid();
         }
 
+        private void DataGridViewReports_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            if (dataGridViewReports.IsCurrentCellDirty)
+            {
+                dataGridViewReports.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        private void DataGridViewReports_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (dataGridViewReports.Columns[e.ColumnIndex].DataPropertyName == "Active")
+            {
+                var report = dataGridViewReports.Rows[e.RowIndex].DataBoundItem as ReportDto;
+
+                if(report != null)
+                {
+                    // TO DO
+                    if (report.Active)
+                    {
+                        // db update
+                        // hangfire add
+                    }
+                    else
+                    {
+                        // db update
+                        // hangfire delete
+                    }
+                }
+            }
+        }
 
         private void HomeScreen_Load(object sender, EventArgs e)
         {
-
+            foreach (var report in _reports.Where(r => r.Active))
+            {
+                _hangfireManager.ScheduleRecurringEmailJobs(report);
+            }
         }
     }
 }
