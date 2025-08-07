@@ -57,7 +57,7 @@ namespace Logo_Project
                 Aktif = true
             }).ToList();
 
-            foreach (var report in _reports.Where(r => r.Aktif))
+            foreach (var report in _reports.Where(r => r.Active))
             {
                 _hangfireManager.ScheduleRecurringEmailJobs(report);
             }
