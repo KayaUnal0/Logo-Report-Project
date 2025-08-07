@@ -96,61 +96,6 @@ namespace UI.WinFormsApp
                     report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
                 }
 
-                if (!string.IsNullOrEmpty(report.Directory))
-                {
-                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    var fileBaseName = $"Report_{report.Subject}_{timestamp}";
-
-                    // Save CSV if needed
-                    if (report.FileType.Contains("Excel"))
-                    {
-                        csvPath = _fileSaver.SaveCsvToFile(
-                            report.Directory,
-                            fileBaseName + ".csv",
-                            result.Results
-                        );
-                    }
-
-                    // Save HTML if needed
-                    if (report.FileType.Contains("HTML"))
-                    {
-                        htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
-                        {
-                            subject = report.Subject,
-                            status = result.Status.ToString(),
-                            results = string.Join("\n", result.Results),
-                            filePath = report.Directory
-                        });
-
-                        htmlPath = _fileSaver.SaveHtmlToFile(
-                            report.Directory,
-                            fileBaseName + ".html",
-                            htmlContent
-                        );
-                    }
-                }
-
-                // Prepare email body
-                if (htmlContent == null)
-                {
-                    htmlContent = await _templateRenderer.RenderTemplateAsync(templatePath, new
-                    {
-                        subject = report.Subject,
-                        status = result.Status.ToString(),
-                        results = string.Join("\n", result.Results),
-                        filePath = report.Directory
-                    });
-                }
-
-                string emailBody = htmlContent;
-
-                // Prepare attachments
-                var attachments = new List<string>();
-                if (!string.IsNullOrEmpty(csvPath))
-                    attachments.Add(csvPath);
-                if (!string.IsNullOrEmpty(htmlPath))
-                    attachments.Add(htmlPath);
-
                 var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
                 if (dtpTime != null)
                 {
@@ -185,8 +130,6 @@ namespace UI.WinFormsApp
                 MessageBox.Show("İşlem sırasında hata oluştu: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-
 
         public void LoadReport(ReportDto report)
         {
