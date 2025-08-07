@@ -205,18 +205,19 @@ namespace Logo_Project
             {
                 var report = dataGridViewReports.Rows[e.RowIndex].DataBoundItem as ReportDto;
 
-                if(report != null)
+                if (report != null)
                 {
-                    // TO DO
+                    // Update 'Active' field in database
+                    _reportRepository.UpdateReport(report.Subject, report);
+
+                    // Sync with Hangfire
                     if (report.Active)
                     {
-                        // db update
-                        // hangfire add
+                        _hangfireManager.ScheduleRecurringEmailJobs(report);
                     }
                     else
                     {
-                        // db update
-                        // hangfire delete
+                        _hangfireManager.RemoveRecurringJob(report.Subject);
                     }
                 }
             }
