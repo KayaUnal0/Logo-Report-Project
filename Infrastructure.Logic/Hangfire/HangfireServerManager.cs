@@ -75,7 +75,7 @@ namespace Infrastructure.Logic.Hangfire
                 RecurringJob.AddOrUpdate(
                     jobId,
                     () => EmailReportExecutor.Execute(report.Subject, report.Period.ToString()),  
-                    Cron.Minutely()
+                    cron
                 );
             }
 
