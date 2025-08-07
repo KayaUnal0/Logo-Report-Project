@@ -59,6 +59,25 @@ namespace Infrastructure.Logic.Database
             return list;
         }
 
+        public ReportDto? GetReportBySubject(string subject)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            var cmd = new SqlCommand("SELECT JsonContent FROM Reports WHERE Subject = @subject", conn);
+            cmd.Parameters.AddWithValue("@subject", subject);
+
+            using var reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                var json = reader.GetString(0);
+                return JsonSerializer.Deserialize<ReportDto>(json);
+            }
+
+            return null;
+        }
+
         public void DeleteReport(string subject)
         {
             using var conn = new SqlConnection(_connectionString);

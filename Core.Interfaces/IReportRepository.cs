@@ -7,7 +7,10 @@ namespace Core.Interfaces
     {
         void SaveReport(ReportDto report);
         List<ReportDto> GetReports();
+        ReportDto? GetReportBySubject(string subject);
+
         void DeleteReport(string subject);
         void UpdateReport(string originalTitle, ReportDto report);
+
     }
 }

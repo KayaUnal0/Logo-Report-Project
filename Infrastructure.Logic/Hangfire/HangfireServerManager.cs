@@ -35,11 +35,13 @@ namespace Infrastructure.Logic.Hangfire
             Task.Run(() => StartWebServer());
 
             _server = new BackgroundJobServer();
-            InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu başlatıldı.");
+            //ClearAllHangfireJobs();
+            //InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu başlatıldı.");
         }
 
         public void Stop()
         {
+            ClearAllHangfireJobs();
             _server?.Dispose();
             InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu durduruldu.");
         }
@@ -65,43 +67,98 @@ namespace Infrastructure.Logic.Hangfire
         public void ScheduleRecurringEmailJobs(ReportDto report)
         {
             var time = report.Time;
+            string cron = "";
+            string info = "";
 
-            //GÜNLÜK
             if (report.Period == ReportPeriod.Günlük)
             {
-                var jobId = $"report:{Slugify(report.Subject)}";
-                var cron = CronUtils.DailyCron(time);
-
-                RecurringJob.AddOrUpdate(
-                    jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, report.Period.ToString()),  
-                    cron
-                );
+                cron = CronUtils.DailyCron(time);
+                info = report.Period.ToString();
             }
-            //HAFTALIK
             else if (report.Period == ReportPeriod.Haftalık)
             {
-                var cron = CronUtils.WeeklyCron(report.SelectedDays, time);
-                var jobId = $"report:{Slugify(report.Subject)}";
-
-                RecurringJob.AddOrUpdate(
-                    jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, string.Join(",", report.SelectedDays)),
-                    cron
-                );
+                cron = CronUtils.WeeklyCron(report.SelectedDays, time);
+                info = string.Join(",", report.SelectedDays);
             }
-            //AYLIK
             else if (report.Period == ReportPeriod.Aylık)
             {
                 int dayOfMonth = report.Date.Day;
-                var cron = CronUtils.MonthlyCron(time, dayOfMonth);
-                var jobId = $"report:{Slugify(report.Subject)}";
+                cron = CronUtils.MonthlyCron(time, dayOfMonth);
+                info = report.Period.ToString();
+            }
 
-                RecurringJob.AddOrUpdate(
-                    jobId,
-                    () => EmailReportExecutor.Execute(report.Subject, report.Period.ToString()),
-                    cron
-                );
+            AddOrUpdate(report.Subject, cron, info);
+        }
+
+        private void AddOrUpdate(string subject, string cron, string info)
+        {
+            RecurringJob.AddOrUpdate(
+                $"report:{Slugify(subject)}",
+                () => EmailReportExecutor.Execute(subject, info),
+                cron,
+                options: new RecurringJobOptions
+                {
+                    TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul")
+                }
+            );
+        }
+
+        public static void ClearAllHangfireJobs()
+        {
+            var jobStorage = JobStorage.Current;
+            var monitoringApi = jobStorage.GetMonitoringApi();
+
+            // Recurring Jobs
+            // var recurringJobs = monitoringApi.RecurringJobs();
+            //foreach (var job in recurringJobs)
+            //{
+            //    RecurringJob.RemoveIfExists(job.Id);
+            //}
+
+            // Scheduled Jobs
+            var scheduledJobs = monitoringApi.ScheduledJobs(0, int.MaxValue);
+            foreach (var job in scheduledJobs)
+            {
+                BackgroundJob.Delete(job.Key);
+            }
+
+            // Enqueued Jobs
+            var queues = monitoringApi.Queues();
+            foreach (var queue in queues)
+            {
+                var enqueuedJobs = monitoringApi.EnqueuedJobs(queue.Name, 0, int.MaxValue);
+                foreach (var job in enqueuedJobs)
+                {
+                    BackgroundJob.Delete(job.Key);
+                }
+            }
+
+            // Processing Jobs (isteğe bağlı, genelde bu anlık işlerdir)
+            var processingJobs = monitoringApi.ProcessingJobs(0, int.MaxValue);
+            foreach (var job in processingJobs)
+            {
+                BackgroundJob.Delete(job.Key);
+            }
+
+            // Failed Jobs
+            var failedJobs = monitoringApi.FailedJobs(0, int.MaxValue);
+            foreach (var job in failedJobs)
+            {
+                BackgroundJob.Delete(job.Key);
+            }
+
+            // Succeeded Jobs (İsteğe bağlı: genelde log amaçlı tutulur)
+            var succeededJobs = monitoringApi.SucceededJobs(0, int.MaxValue);
+            foreach (var job in succeededJobs)
+            {
+                BackgroundJob.Delete(job.Key);
+            }
+
+            // Deleted Jobs da varsa temizleyebilirsin
+            var deletedJobs = monitoringApi.DeletedJobs(0, int.MaxValue);
+            foreach (var job in deletedJobs)
+            {
+                BackgroundJob.Delete(job.Key);
             }
         }
 

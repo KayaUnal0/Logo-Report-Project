@@ -1,6 +1,7 @@
 ﻿using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
+using Hangfire;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Filesystem;
@@ -32,10 +33,12 @@ namespace Infrastructure.Logic.Jobs
                 var templateRenderer = new TemplateRenderer();
                 var reportRepo = new ReportRepository("Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;");
 
-                var reports = reportRepo.GetReports();
-                var report = reports.FirstOrDefault(r => r.Subject == reportSubject);
+                var report = reportRepo.GetReportBySubject(reportSubject);
                 if (report == null)
                 {
+                    var monitoringApi = JobStorage.Current.GetMonitoringApi();
+                    var recurringJobs = monitoringApi.Queues();
+
                     InfrastructureLoggerConfig.Instance.Logger.Warning("'{Subject}' başlıklı rapor bulunamadı.", reportSubject);
                     return;
                 }
