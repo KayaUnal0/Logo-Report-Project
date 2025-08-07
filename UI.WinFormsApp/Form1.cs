@@ -65,6 +65,7 @@ namespace UI.WinFormsApp
                 report.Email = txtEmail.Text;
                 report.Subject = txtReportTitle.Text;
                 report.Query = rtbSqlQuery.Text;
+
                 if (Enum.TryParse<ReportPeriod>(cmbPeriod.SelectedItem?.ToString(), out var parsedPeriod))
                 {
                     report.Period = parsedPeriod;
@@ -98,7 +99,7 @@ namespace UI.WinFormsApp
                 if (!string.IsNullOrEmpty(report.Directory))
                 {
                     var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    var fileBaseName = $"Report_{timestamp}";
+                    var fileBaseName = $"Report_{report.Subject}_{timestamp}";
 
                     // Save CSV if needed
                     if (report.FileType.Contains("Excel"))
@@ -129,7 +130,6 @@ namespace UI.WinFormsApp
                     }
                 }
 
-
                 // Prepare email body
                 if (htmlContent == null)
                 {
@@ -155,6 +155,12 @@ namespace UI.WinFormsApp
                 if (dtpTime != null)
                 {
                     report.Time = dtpTime.Value.TimeOfDay;
+                }
+
+                var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault() as DateTimePicker;
+                if(dtpDate != null)
+                {
+                    report.Date = dtpDate.Value;
                 }
 
                 // Save or update report
@@ -196,11 +202,16 @@ namespace UI.WinFormsApp
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
             _originalTitle = report.Subject;
-
+  
             var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
             if (dtpTime != null)
             {
                 dtpTime.Value = DateTime.Today.Add(report.Time);
+            }
+            var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault() as DateTimePicker;
+            if (dtpDate != null)
+            {
+                dtpDate.Value = report.Date;
             }
 
             foreach (var cb in dayCheckboxes)

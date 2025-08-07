@@ -93,7 +93,7 @@ namespace Infrastructure.Logic.Hangfire
             //AYLIK
             else if (report.Period == ReportPeriod.Aylık)
             {
-                int dayOfMonth = report.CreatedAt.Day;
+                int dayOfMonth = report.Date.Day;
                 var cron = CronUtils.MonthlyCron(time, dayOfMonth);
                 var jobId = $"report:{Slugify(report.Subject)}";
 
