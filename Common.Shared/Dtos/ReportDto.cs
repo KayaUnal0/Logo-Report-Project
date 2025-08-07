@@ -9,7 +9,7 @@ namespace Common.Shared.Dtos
         public ReportPeriod Period { get; set; } = ReportPeriod.Günlük;// Period
         public string Email { get; set; }             // eposta
         public string Directory { get; set; }         // dizin
-        public bool Aktif { get; set; }               // aktif (checkbox)
+        public bool Active { get; set; }               // aktif (checkbox)
 
         public string Query { get; set; }           
         public List<WeekDay> SelectedDays { get; set; } = new();

@@ -91,7 +91,7 @@ namespace UI.WinFormsApp
                 // Use provided directory or keep the one already in report
                 if (!isEditMode)
                 {
-                    report.Aktif = true;
+                    report.Active = true;
                     report.Directory = string.IsNullOrWhiteSpace(txtDirectory.Text) ? null : txtDirectory.Text;
                 }
 
