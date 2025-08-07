@@ -89,6 +89,12 @@ namespace UI.WinFormsApp
                 string htmlContent = null;
                 string templatePath = "Templates/EmailTemplate.sbn";
 
+                if (string.IsNullOrWhiteSpace(txtDirectory.Text))
+                {
+                    MessageBox.Show("Lütfen bir dizin belirtin. Bu alan zorunludur.", "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 // Use provided directory or keep the one already in report
                 if (!isEditMode)
                 {
@@ -298,7 +304,7 @@ namespace UI.WinFormsApp
             {
                 Location = new Point(controlX, y),
                 Width = 220,
-                PlaceholderText = "İsteğe bağlı",
+                PlaceholderText = "Zorunlu alan",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             Controls.Add(txtDirectory);

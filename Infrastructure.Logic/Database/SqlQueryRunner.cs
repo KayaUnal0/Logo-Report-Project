@@ -27,6 +27,14 @@ namespace Infrastructure.Logic.Database
 
             try
             {
+                if (string.IsNullOrWhiteSpace(sql))
+                {
+                    return new ReportExecutionResult
+                    {
+                        Results = new List<string> { "No query to execute." }
+                    };
+                }
+
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
