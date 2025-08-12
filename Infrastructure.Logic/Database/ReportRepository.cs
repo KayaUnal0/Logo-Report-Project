@@ -19,6 +19,7 @@ namespace Infrastructure.Logic.Database
         public void SaveReport(ReportDto report)
         {
             var json = JsonSerializer.Serialize(report);
+            report.JsonContent = json;
 
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -95,6 +96,7 @@ namespace Infrastructure.Logic.Database
         public void UpdateReport(string originalTitle, ReportDto report)
         {
             var json = JsonSerializer.Serialize(report);
+            report.JsonContent = json;
 
             using var conn = new SqlConnection(_connectionString);
             conn.Open();

@@ -20,11 +20,13 @@ namespace Infrastructure.Logic.Hangfire
     public class HangfireServerManager : IHangfireManager
     {
         private BackgroundJobServer? _server;
-        private readonly EmailJob _emailJob; 
+        private readonly EmailJob _emailJob;
+        private readonly string _connectionString;
 
-        public HangfireServerManager(EmailJob emailJob)
+        public HangfireServerManager(EmailJob emailJob, string connectionString)
         {
             _emailJob = emailJob;
+            _connectionString = connectionString;
         }
 
         public void Start()
@@ -35,8 +37,7 @@ namespace Infrastructure.Logic.Hangfire
             Task.Run(() => StartWebServer());
 
             _server = new BackgroundJobServer();
-            //ClearAllHangfireJobs();
-            //InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu başlatıldı.");
+
         }
 
         public void Stop()
@@ -168,21 +169,19 @@ namespace Infrastructure.Logic.Hangfire
             InfrastructureLoggerConfig.Instance.Logger.Information("Zamanlanmış görev silindi: {JobId}.", subject);
         }
 
-        private static void StartWebServer()
+        private void StartWebServer()
         {
             var builder = WebApplication.CreateBuilder();
 
-            builder.Services.AddHangfire(config =>
+            builder.Services.AddHangfire(cfg =>
             {
-                config.UseMemoryStorage();
+                cfg.UseSqlServerStorage(_connectionString);
             });
 
             builder.Services.AddHangfireServer();
 
             var app = builder.Build();
-
             app.UseHangfireDashboard("/hangfire");
-
             app.Run();
         }
     }

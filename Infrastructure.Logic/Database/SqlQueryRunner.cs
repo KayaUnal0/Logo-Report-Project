@@ -1,8 +1,10 @@
-﻿using Common.Shared.Dtos;
+﻿using Common.Shared;
+using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
 using Infrastructure.Logic.Logging;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -12,10 +14,16 @@ namespace Infrastructure.Logic.Database
     public class SqlQueryRunner : ISqlQueryRunner
     {
         private readonly string _connectionString;
-
-        public SqlQueryRunner()
+        public SqlQueryRunner(IConfiguration config)
         {
-            _connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
+            var dbSettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
+
+            _connectionString = $"Server={dbSettings.Server};" +
+                                $"Database={dbSettings.Database};" +
+                                $"User Id={dbSettings.UserId};" +
+                                $"Password={dbSettings.Password};" +
+                                $"Encrypt={dbSettings.Encrypt};" +
+                                $"TrustServerCertificate={dbSettings.TrustServerCertificate};";
         }
 
         public ReportExecutionResult ExecuteQuery(string sql)

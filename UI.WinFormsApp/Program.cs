@@ -1,4 +1,5 @@
 ﻿using Common.Shared;
+using Common.Shared.Dtos;
 using Core.Interfaces;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -44,18 +45,23 @@ namespace Logo_Project
             UIWinFormsLoggerConfig.Instance.Init(uiLoggerSettings);
             InfrastructureLoggerConfig.Instance.Init(infraLoggerSettings);
 
-            string connectionString = "Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;";
-
-            // Setup Hangfire to use memory storage
-            GlobalConfiguration.Configuration
-                .UseSqlServerStorage(connectionString);
-
-            using var server = new BackgroundJobServer();
-
             var config = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
+
+            var dbQuerySettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
+            string connectionQueryString = dbQuerySettings.ToConnectionString();
+
+            var dbAppSettings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>();
+            string connectionAppString = dbAppSettings.ToConnectionString();
+
+            // Setup Hangfire to use memory storage
+            GlobalConfiguration.Configuration
+                .UseSqlServerStorage(connectionAppString);
+
+            using var server = new BackgroundJobServer();
+
 
             // Manually initialize dependencies
             var emailSettings = config.GetSection("EmailSettings").Get<EmailSettings>();
@@ -64,11 +70,11 @@ namespace Logo_Project
 
             EmailJobWrapper.JobInstance = emailJob;
 
-            var sqlRunner = new SqlQueryRunner();
-            var hangfireManager = new HangfireServerManager(emailJob);
+            var sqlRunner = new SqlQueryRunner(config);
+            var hangfireManager = new HangfireServerManager(emailJob, connectionAppString);
             var fileSaver = new FileSaver();
             var templateRenderer = new TemplateRenderer();
-            var reportRepository = new ReportRepository(connectionString);
+            var reportRepository = new ReportRepository(connectionAppString);
 
             hangfireManager.Start();
 

@@ -1,4 +1,5 @@
-﻿using Common.Shared.Dtos;
+﻿using Common.Shared;                
+using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
 using Hangfire;
@@ -24,64 +25,61 @@ namespace Infrastructure.Logic.Jobs
             {
                 var config = new ConfigurationBuilder()
                     .SetBasePath(AppContext.BaseDirectory)
-                    .AddJsonFile("appsettings.json")
+                    .AddJsonFile("appsettings.json", optional: false)
                     .Build();
 
+                // Settings
                 var emailSettings = config.GetSection("EmailSettings").Get<EmailSettings>();
-                var sender = new EmailSender(emailSettings);
-                var sqlRunner = new SqlQueryRunner();
-                var templateRenderer = new TemplateRenderer();
-                var reportRepo = new ReportRepository("Server=KAYAUNAL;Database=LogoProject;User Id=sa;Password=1;Encrypt=True;TrustServerCertificate=True;");
+                var dbSettings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>();
+                var connectionString = dbSettings.ToConnectionString();
 
+                // Services
+                var sender = new EmailSender(emailSettings);
+                var sqlRunner = new SqlQueryRunner(config);
+                var templateRenderer = new TemplateRenderer();
+                var reportRepo = new ReportRepository(connectionString); 
+
+                // Get report
                 var report = reportRepo.GetReportBySubject(reportSubject);
                 if (report == null)
                 {
-                    var monitoringApi = JobStorage.Current.GetMonitoringApi();
-                    var recurringJobs = monitoringApi.Queues();
-
                     InfrastructureLoggerConfig.Instance.Logger.Warning("'{Subject}' başlıklı rapor bulunamadı.", reportSubject);
                     return;
                 }
 
+                // Run SQL
                 var result = sqlRunner.ExecuteQuery(report.Query);
 
-                string htmlBody = null;
-                var attachments = new List<string>();
-                string safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
-                var fileSaver = new FileSaver();
-
-                // render the HTML body for the email
-                htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
+                // Build HTML body (table)
+                var tableHtml = HtmlTableBuilder.FromTsvLines(result.Results);
+                var htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
                 {
                     subject = report.Subject,
                     status = result.Status.ToString(),
-                    results = string.Join("\n", result.Results),
+                    results_table = tableHtml,
                     filePath = report.Directory
                 }).Result;
 
-                // Save CSV if Excel or Excel+HTML
+                // Attachments
+                var attachments = new List<string>();
+                var safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
+                var fileSaver = new FileSaver();
+
                 if (report.FileType.Contains("Excel"))
                 {
                     var csvPath = fileSaver.SaveCsvToFile(report.Directory, safeFileName + ".csv", result.Results);
-                    if (!string.IsNullOrEmpty(csvPath))
-                        attachments.Add(csvPath);
+                    if (!string.IsNullOrEmpty(csvPath)) attachments.Add(csvPath);
                 }
 
-                // Save HTML file if HTML or Excel+HTML
                 if (report.FileType.Contains("HTML"))
                 {
-                    var htmlPath = Path.Combine(report.Directory, safeFileName + ".html");
-                    File.WriteAllText(htmlPath, htmlBody);
+                    // Save as full HTML document
+                    var htmlPath = fileSaver.SaveHtmlToFile(report.Directory, safeFileName + ".html", htmlBody);
                     attachments.Add(htmlPath);
                 }
 
-                // Send email with attachments and the rendered template as body
-                sender.Send(
-                    report.Email,
-                    report.Subject,
-                    htmlBody,
-                    attachments.ToArray()
-                );
+                // Send
+                sender.Send(report.Email, report.Subject, htmlBody, attachments.ToArray());
 
                 InfrastructureLoggerConfig.Instance.Logger.Information("Zamanlanmış rapor gönderildi: {Subject} ({Day})", reportSubject, dayString);
             }

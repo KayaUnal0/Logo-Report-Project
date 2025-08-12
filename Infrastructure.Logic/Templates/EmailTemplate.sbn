@@ -5,12 +5,10 @@
 	<p>
 		<strong>Durum:</strong> {{ status }}
 	</p>
-	<pre>{{ results }}</pre>
+
+	{{ results_table }}
+
 	<p>
 		<strong>Dizin:</strong> {{ filePath }}
 	</p>
-	<p>
-		<em>Rapor CSV formatında eklenmiştir. Excel'de açabilirsiniz.</em>
-	</p>
-
 </div>
