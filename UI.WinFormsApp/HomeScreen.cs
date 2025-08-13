@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using UI.WinFormsApp;
+using System.Linq;
 
 namespace Logo_Project
 {
@@ -22,15 +23,14 @@ namespace Logo_Project
         private readonly EmailJob _emailJob;
         private readonly TemplateRenderer _templateRenderer;
 
-        private ListBox lstReports;
         private List<ReportDto> _reports;
 
         private readonly IReportRepository _reportRepository;
 
-        private DataGridView dataGridViewReports;
 
 
-        public HomeScreen(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
+        public HomeScreen(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
+                          IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _emailSender = emailSender;
             _sqlQueryRunner = sqlQueryRunner;
@@ -41,8 +41,17 @@ namespace Logo_Project
             _reportRepository = reportRepository;
 
             InitializeComponent();
-            SetupLayout();
+
+            btnNew.Click += BtnNew_Click;
+            btnEdit.Click += BtnEdit_Click;
+            btnDelete.Click += BtnDelete_Click;
+
+            dataGridViewReports.CurrentCellDirtyStateChanged += DataGridViewReports_CurrentCellDirtyStateChanged;
+            dataGridViewReports.CellValueChanged += DataGridViewReports_CellValueChanged;
+
+            LoadReportsGrid();
         }
+
 
         private void LoadReportsGrid()
         {
@@ -96,139 +105,44 @@ namespace Logo_Project
             }
         }
 
-        private void SetupLayout()
-        {
-            this.Text = "Ana Ekran";
-            this.Size = new Size(800, 620);
-            this.MinimumSize = new Size(500, 620);
-
-            // Yeni Rapor Butonu
-            var btnNew = new Button
-            {
-                Text = "Yeni Rapor Oluştur",
-                Location = new Point(20, 20),
-                Size = new Size(180, 40),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left
-            };
-            btnNew.Click += BtnNew_Click;
-            Controls.Add(btnNew);
-
-            // Düzenle Butonu
-            var btnEdit = new Button
-            {
-                Text = "Düzenle",
-                Location = new Point(20, 480),
-                Size = new Size(140, 35),
-                Anchor = AnchorStyles.Left | AnchorStyles.Bottom
-            };
-            btnEdit.Click += BtnEdit_Click;
-            Controls.Add(btnEdit);
-
-            // Sil Butonu
-            var btnDelete = new Button
-            {
-                Text = "Sil",
-                Location = new Point(180, 480),
-                Size = new Size(140, 35),
-                Anchor = AnchorStyles.Left | AnchorStyles.Bottom
-            };
-            btnDelete.Click += BtnDelete_Click;
-            Controls.Add(btnDelete);
-
-            //Grid
-            dataGridViewReports = new DataGridView
-            {
-                Location = new Point(20, 90),
-                Size = new Size(740, 340),
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                ReadOnly = false,
-                AllowUserToAddRows = false,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-                AutoGenerateColumns = false
-            };
-
-            dataGridViewReports.CurrentCellDirtyStateChanged += DataGridViewReports_CurrentCellDirtyStateChanged;
-            dataGridViewReports.CellValueChanged += DataGridViewReports_CellValueChanged;
-
-
-            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Subject",
-                HeaderText = "Başlık",
-                ReadOnly = true
-            });
-
-            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Period",
-                HeaderText = "Period",
-                ReadOnly = true
-            });
-
-            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Email",
-                HeaderText = "E-Posta",
-                ReadOnly = true
-            });
-
-            dataGridViewReports.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                DataPropertyName = "Directory",
-                HeaderText = "Dizin",
-                ReadOnly = true
-            });
-
-            dataGridViewReports.Columns.Add(new DataGridViewCheckBoxColumn
-            {
-                DataPropertyName = "Active",
-                HeaderText = "Aktif",
-                ReadOnly = false
-            });
-
-            Controls.Add(dataGridViewReports);
-
-            LoadReportsGrid();
-        }
-
-        private void DataGridViewReports_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
-        {
-            if (dataGridViewReports.IsCurrentCellDirty)
-            {
-                dataGridViewReports.CommitEdit(DataGridViewDataErrorContexts.Commit);
-            }
-        }
-
-        private void DataGridViewReports_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
-        {
-            if (dataGridViewReports.Columns[e.ColumnIndex].DataPropertyName == "Active")
-            {
-                var report = dataGridViewReports.Rows[e.RowIndex].DataBoundItem as ReportDto;
-
-                if (report != null)
-                {
-                    // Update 'Active' field in database
-                    _reportRepository.UpdateReport(report.Subject, report);
-
-                    // Sync with Hangfire
-                    if (report.Active)
-                    {
-                        _hangfireManager.ScheduleRecurringEmailJobs(report);
-                    }
-                    else
-                    {
-                        _hangfireManager.RemoveRecurringJob(report.Subject);
-                    }
-                }
-            }
-        }
-
         private void HomeScreen_Load(object sender, EventArgs e)
         {
             foreach (var report in _reports.Where(r => r.Active))
             {
                 _hangfireManager.ScheduleRecurringEmailJobs(report);
             }
+        }
+
+        // Fires when a checkbox cell is clicked so the value actually commits
+        private void DataGridViewReports_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            if (dataGridViewReports.IsCurrentCellDirty)
+                dataGridViewReports.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
+
+        // Persist Active toggle and sync Hangfire
+        private void DataGridViewReports_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            var col = dataGridViewReports.Columns[e.ColumnIndex];
+            if (col.DataPropertyName == "Active")
+            {
+                if (dataGridViewReports.Rows[e.RowIndex].DataBoundItem is ReportDto report)
+                {
+                    _reportRepository.UpdateReport(report.Subject, report);
+
+                    if (report.Active)
+                        _hangfireManager.ScheduleRecurringEmailJobs(report);
+                    else
+                        _hangfireManager.RemoveRecurringJob(report.Subject);
+                }
+            }
+        }
+
+        private void dataGridViewReports_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
         }
     }
 }

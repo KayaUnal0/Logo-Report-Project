@@ -11,8 +11,10 @@ using Logo_Project.Logging;
 using Serilog;
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 
 namespace UI.WinFormsApp
@@ -29,13 +31,11 @@ namespace UI.WinFormsApp
         private string _originalTitle;
         private ReportDto currentReport = null;
 
-        private TextBox txtReportTitle, txtEmail, txtDirectory;
-        private RichTextBox rtbSqlQuery;
-        private ComboBox cmbPeriod;
         private List<CheckBox> dayCheckboxes = new();
 
 
-        public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager, IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
+        public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
+                     IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _sqlQueryRunner = sqlQueryRunner;
             _hangfireManager = hangfireManager;
@@ -45,7 +45,23 @@ namespace UI.WinFormsApp
             _reportRepository = reportRepository;
 
             InitializeComponent();
-            SetupFormLayout();
+            // Build the weekly checkbox list used by logic
+            dayCheckboxes = new()
+            {
+                cbPazartesi, cbSalı, cbÇarşamba, cbPerşembe, cbCuma, cbCumartesi, cbPazar
+            };
+
+            // Populate Period combo and hook event
+            cmbPeriod.Items.AddRange(Enum.GetNames(typeof(ReportPeriod)));
+            cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
+            cmbPeriod.SelectedIndex = 0;    // Günlük
+            cmbFileType.SelectedIndex = 0;  // Excel
+            CmbPeriod_SelectedIndexChanged(cmbPeriod, EventArgs.Empty);
+
+            // Buttons
+            btnOnayla.Click += BtnOnayla_Click;
+            btnBrowse.Click += BtnBrowse_Click;
+            btnOnayla.Name = "btnOnayla"; 
         }
 
 
@@ -58,9 +74,7 @@ namespace UI.WinFormsApp
                 var report = isEditMode ? currentReport : new ReportDto();
 
                 // Get file type selection
-                var cmbFileType = Controls.Find("cmbFileType", true).FirstOrDefault() as ComboBox;
-                report.FileType = cmbFileType?.SelectedItem?.ToString() ?? "Excel";
-
+                report.FileType = cmbFileType.SelectedItem?.ToString() ?? "Excel";
                 // Collect report data
                 report.Email = txtEmail.Text;
                 report.Subject = txtReportTitle.Text;
@@ -109,7 +123,7 @@ namespace UI.WinFormsApp
                 }
 
                 var dtpDate = Controls.Find("dtpDate", true).FirstOrDefault() as DateTimePicker;
-                if(dtpDate != null)
+                if (dtpDate != null)
                 {
                     report.Date = dtpDate.Value;
                 }
@@ -151,7 +165,7 @@ namespace UI.WinFormsApp
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
             _originalTitle = report.Subject;
-  
+
             var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
             if (dtpTime != null)
             {
@@ -247,198 +261,9 @@ namespace UI.WinFormsApp
                 {
                     btnOnayla.Location = new Point(btnOnayla.Location.X, cbY + 20);
                 }
-                
+
             }
         }
-
-
-        private void SetupFormLayout()
-        {
-            this.Text = "Rapor Planlayıcı";
-            this.Size = new Size(600, 750);
-            this.MinimumSize = this.Size;
-
-
-            int labelX = 30;
-            int controlX = 180;
-            int y = 20;
-            int spacing = 35;
-
-            //Rapor Başlığı
-            Controls.Add(new Label { Text = "Rapor Başlığı", Location = new Point(labelX, y), AutoSize = true });
-            txtReportTitle = new TextBox 
-            { 
-                Location = new Point(controlX, y), 
-                Width = 300,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(txtReportTitle);
-            y += spacing;
-
-            //Rapor Sorgusu
-            Controls.Add(new Label { Text = "Rapor Sorgusu", Location = new Point(labelX, y), AutoSize = true });
-            rtbSqlQuery = new RichTextBox 
-            { 
-                Location = new Point(controlX, y), 
-                Size = new Size(300, 100),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(rtbSqlQuery);
-            y += 110;
-
-            //E-posta
-            Controls.Add(new Label { Text = "E-Posta", Location = new Point(labelX, y), AutoSize = true });
-            txtEmail = new TextBox 
-            { 
-                Location = new Point(controlX, y), 
-                Width = 300, 
-                Text = "xxx@logocom.tr",
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(txtEmail);
-            y += spacing;
-
-            //Dizin
-            Controls.Add(new Label { Text = "Dizin", Location = new Point(labelX, y), AutoSize = true });
-            txtDirectory = new TextBox
-            {
-                Location = new Point(controlX, y),
-                Width = 220,
-                PlaceholderText = "Zorunlu alan",
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(txtDirectory);
-
-            //Gözat butonu
-            var btnBrowse = new Button
-            {
-                Text = "Gözat...",
-                Location = new Point(controlX + 230, y),
-                Width = 70,
-                Height = 25,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-            btnBrowse.Click += BtnBrowse_Click;
-            Controls.Add(btnBrowse);
-            y += spacing;
-
-
-            // Dosya türü (label)
-            var lblFile = new Label
-            {
-                Name = "lblFile",
-                Text = "Dosya türü",
-                Location = new Point(labelX, y),
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(lblFile);
-
-            // Dosya türü (combobox)
-            var cmbFileType = new ComboBox
-            {
-                Name = "cmbFileType",
-                Location = new Point(controlX, y),
-                Width = 300,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            cmbFileType.Items.AddRange(new string[] { "Excel", "HTML", "Excel, HTML" });
-            cmbFileType.SelectedIndex = 0;
-            Controls.Add(cmbFileType);
-            y += spacing;
-
-            //Period
-            Controls.Add(new Label { Text = "Period", Location = new Point(labelX, y), AutoSize = true });
-            cmbPeriod = new ComboBox
-            {
-                Location = new Point(controlX, y),
-                Width = 300,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            cmbPeriod.Items.AddRange(Enum.GetNames(typeof(ReportPeriod)));
-
-            Controls.Add(cmbPeriod);
-            y += spacing;
-
-            // Day checkboxes
-            string[] days = { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" };
-            for (int i = 0; i < days.Length; i++)
-            {
-                var cb = new CheckBox
-                {
-                    Text = days[i],
-                    Location = new Point(controlX, y + i * 25),
-                    AutoSize = true
-                };
-                dayCheckboxes.Add(cb);
-                Controls.Add(cb);
-            }
-            y += 8 * 25;
-
-            // Gün (label)
-            var lblDay = new Label
-            {
-                Name = "lblDay",
-                Text = "Gün",
-                Location = new Point(labelX, y),
-                AutoSize = true
-            };
-            Controls.Add(lblDay);
-
-            Controls.Add(new DateTimePicker
-            {
-                Name = "dtpDate",
-                Format = DateTimePickerFormat.Short,
-                Location = new Point(controlX, y),
-                Width = 200,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            });
-            y += spacing;
-
-            // Saat (label)
-            var lblTime = new Label
-            {
-                Name = "lblTime",
-                Text = "Saat",
-                Location = new Point(labelX, y),
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            Controls.Add(lblTime);
-
-            Controls.Add(new DateTimePicker
-            {
-                Name = "dtpTime",
-                Format = DateTimePickerFormat.Time,
-                ShowUpDown = true,
-                Location = new Point(controlX, y),
-                Width = 200,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            });
-            y += spacing; 
-
-
-
-            //Onayla button 
-            var btnOnayla = new Button
-            {
-                Name = "btnOnayla",
-                Text = "Onayla",
-                Location = new Point(controlX + 145, y),
-                Width = 150,
-                Height = 40,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-            };
-            btnOnayla.Click += BtnOnayla_Click;
-            Controls.Add(btnOnayla);
-
-            cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
-            cmbPeriod.SelectedIndex = 0; // Select "Günlük" by default
-            CmbPeriod_SelectedIndexChanged(cmbPeriod, EventArgs.Empty);
-        }
-
 
         private void Form1_Load(object sender, EventArgs e)
         {
