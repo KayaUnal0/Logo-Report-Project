@@ -1,6 +1,6 @@
 ﻿namespace UI.WinFormsApp
 {
-    partial class Form1
+    partial class ReportPlannerUI
     {
         /// <summary>
         /// Required method for Designer support.
@@ -272,7 +272,7 @@
             dtpTime.Size = new Size(200, 27);
             dtpTime.TabIndex = 24;
             // 
-            // Form1
+            // ReportPlannerUI
             // 
             ClientSize = new Size(582, 703);
             Controls.Add(dtpTime);
@@ -301,8 +301,8 @@
             Controls.Add(lblReportTitle);
             Controls.Add(btnOnayla);
             MinimumSize = new Size(600, 750);
-            Name = "Form1";
-            Text = "Form1";
+            Name = "ReportPlannerUI";
+            Text = "Rapor Planlayıcı";
             Load += Form1_Load;
             ResumeLayout(false);
             PerformLayout();

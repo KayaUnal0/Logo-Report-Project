@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace UI.WinFormsApp
 {
-    public partial class Form1 : Form
+    public partial class ReportPlannerUI : Form
     {
         private readonly ISqlQueryRunner _sqlQueryRunner;
         private readonly IHangfireManager _hangfireManager;
@@ -34,7 +34,7 @@ namespace UI.WinFormsApp
         private List<CheckBox> dayCheckboxes = new();
 
 
-        public Form1(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
+        public ReportPlannerUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
                      IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _sqlQueryRunner = sqlQueryRunner;

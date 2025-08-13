@@ -1,6 +1,6 @@
 ﻿namespace Logo_Project
 {
-    partial class HomeScreen
+    partial class ReportListUI
     {
         /// <summary>
         /// Required designer variable.
@@ -29,14 +29,14 @@
         private void InitializeComponent()
         {
             dataGridViewReports = new DataGridView();
-            btnNew = new Button();
-            btnEdit = new Button();
-            btnDelete = new Button();
             colSubject = new DataGridViewTextBoxColumn();
             colPeriod = new DataGridViewTextBoxColumn();
             colEmail = new DataGridViewTextBoxColumn();
             colDirectory = new DataGridViewTextBoxColumn();
             colActive = new DataGridViewCheckBoxColumn();
+            btnNew = new Button();
+            btnEdit = new Button();
+            btnDelete = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewReports).BeginInit();
             SuspendLayout();
             // 
@@ -56,35 +56,6 @@
             dataGridViewReports.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridViewReports.Size = new Size(740, 340);
             dataGridViewReports.TabIndex = 4;
-            // 
-            // btnNew
-            // 
-            btnNew.Location = new Point(20, 20);
-            btnNew.Name = "btnNew";
-            btnNew.Size = new Size(180, 40);
-            btnNew.TabIndex = 1;
-            btnNew.Text = "Yeni Rapor Oluştur";
-            btnNew.UseVisualStyleBackColor = true;
-            // 
-            // btnEdit
-            // 
-            btnEdit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnEdit.Location = new Point(20, 480);
-            btnEdit.Name = "btnEdit";
-            btnEdit.Size = new Size(140, 35);
-            btnEdit.TabIndex = 2;
-            btnEdit.Text = "Düzenle";
-            btnEdit.UseVisualStyleBackColor = true;
-            // 
-            // btnDelete
-            // 
-            btnDelete.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnDelete.Location = new Point(180, 480);
-            btnDelete.Name = "btnDelete";
-            btnDelete.Size = new Size(140, 35);
-            btnDelete.TabIndex = 3;
-            btnDelete.Text = "Sil";
-            btnDelete.UseVisualStyleBackColor = true;
             // 
             // colSubject
             // 
@@ -120,14 +91,43 @@
             // 
             // colActive
             // 
+            colActive.DataPropertyName = "Active";
             colActive.HeaderText = "Aktif";
             colActive.MinimumWidth = 6;
             colActive.Name = "colActive";
             colActive.Resizable = DataGridViewTriState.True;
-            colActive.DataPropertyName = "Active";
             colActive.SortMode = DataGridViewColumnSortMode.Automatic;
             // 
-            // HomeScreen
+            // btnNew
+            // 
+            btnNew.Location = new Point(20, 20);
+            btnNew.Name = "btnNew";
+            btnNew.Size = new Size(180, 40);
+            btnNew.TabIndex = 1;
+            btnNew.Text = "Yeni Rapor Oluştur";
+            btnNew.UseVisualStyleBackColor = true;
+            // 
+            // btnEdit
+            // 
+            btnEdit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnEdit.Location = new Point(20, 480);
+            btnEdit.Name = "btnEdit";
+            btnEdit.Size = new Size(140, 35);
+            btnEdit.TabIndex = 2;
+            btnEdit.Text = "Düzenle";
+            btnEdit.UseVisualStyleBackColor = true;
+            // 
+            // btnDelete
+            // 
+            btnDelete.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnDelete.Location = new Point(180, 480);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(140, 35);
+            btnDelete.TabIndex = 3;
+            btnDelete.Text = "Sil";
+            btnDelete.UseVisualStyleBackColor = true;
+            // 
+            // ReportListUI
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -137,7 +137,7 @@
             Controls.Add(btnNew);
             Controls.Add(dataGridViewReports);
             MinimumSize = new Size(500, 620);
-            Name = "HomeScreen";
+            Name = "ReportListUI";
             Text = "Ana Ekran";
             Load += HomeScreen_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewReports).EndInit();

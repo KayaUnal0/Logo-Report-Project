@@ -14,7 +14,7 @@ using System.Linq;
 
 namespace Logo_Project
 {
-    public partial class HomeScreen : Form
+    public partial class ReportListUI : Form
     {
         private readonly IEmailSender _emailSender;
         private readonly ISqlQueryRunner _sqlQueryRunner;
@@ -29,7 +29,7 @@ namespace Logo_Project
 
 
 
-        public HomeScreen(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
+        public ReportListUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
                           IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
             _emailSender = emailSender;
@@ -63,7 +63,7 @@ namespace Logo_Project
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
+            var form = new ReportPlannerUI(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
             form.ShowDialog();
             LoadReportsGrid();
         }
@@ -79,7 +79,7 @@ namespace Logo_Project
             var index = dataGridViewReports.CurrentRow.Index;
             var selected = _reports[index];
 
-            var form = new Form1(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
+            var form = new ReportPlannerUI(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
             form.LoadReport(selected);
             form.ShowDialog();
             LoadReportsGrid();

@@ -79,7 +79,7 @@ namespace Logo_Project
             hangfireManager.Start();
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new HomeScreen(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
+            Application.Run(new ReportListUI(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
         }
     }
 }
