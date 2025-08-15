@@ -164,6 +164,7 @@
             cmbPeriod.Name = "cmbPeriod";
             cmbPeriod.Size = new Size(300, 28);
             cmbPeriod.TabIndex = 13;
+            cmbPeriod.SelectedIndexChanged += cmbPeriod_SelectedIndexChanged_1;
             // 
             // cbPazartesi
             // 

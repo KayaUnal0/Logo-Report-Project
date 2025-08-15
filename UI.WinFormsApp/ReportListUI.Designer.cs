@@ -37,13 +37,13 @@
             btnNew = new Button();
             btnEdit = new Button();
             btnDelete = new Button();
+            btnSettings = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewReports).BeginInit();
             SuspendLayout();
             // 
             // dataGridViewReports
             // 
             dataGridViewReports.AllowUserToAddRows = false;
-            dataGridViewReports.AutoGenerateColumns = false;
             dataGridViewReports.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dataGridViewReports.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewReports.ColumnHeadersHeight = 29;
@@ -56,6 +56,7 @@
             dataGridViewReports.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridViewReports.Size = new Size(740, 340);
             dataGridViewReports.TabIndex = 4;
+            dataGridViewReports.CellContentClick += dataGridViewReports_CellContentClick_1;
             // 
             // colSubject
             // 
@@ -127,11 +128,21 @@
             btnDelete.Text = "Sil";
             btnDelete.UseVisualStyleBackColor = true;
             // 
+            // btnSettings
+            // 
+            btnSettings.Location = new Point(680, 20);
+            btnSettings.Name = "btnSettings";
+            btnSettings.Size = new Size(80, 28);
+            btnSettings.TabIndex = 5;
+            btnSettings.Text = "Ayarlar";
+            btnSettings.UseVisualStyleBackColor = true;
+            // 
             // ReportListUI
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(782, 573);
+            Controls.Add(btnSettings);
             Controls.Add(btnDelete);
             Controls.Add(btnEdit);
             Controls.Add(btnNew);
@@ -155,5 +166,6 @@
         private DataGridViewTextBoxColumn colEmail;
         private DataGridViewTextBoxColumn colDirectory;
         private DataGridViewCheckBoxColumn colActive;
+        private Button btnSettings;
     }
 }

@@ -5,19 +5,20 @@ using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using UI.WinFormsApp;
-using System.Linq;
 
 namespace Logo_Project
 {
     public partial class ReportListUI : Form
     {
         private readonly IEmailSender _emailSender;
-        private readonly ISqlQueryRunner _sqlQueryRunner;
+        private ISqlQueryRunner _sqlQueryRunner;
         private readonly IHangfireManager _hangfireManager;
         private readonly IFileSaver _fileSaver;
         private readonly EmailJob _emailJob;
@@ -45,9 +46,11 @@ namespace Logo_Project
             btnNew.Click += BtnNew_Click;
             btnEdit.Click += BtnEdit_Click;
             btnDelete.Click += BtnDelete_Click;
+            btnSettings.Click += BtnSettings_Click;
 
             dataGridViewReports.CurrentCellDirtyStateChanged += DataGridViewReports_CurrentCellDirtyStateChanged;
             dataGridViewReports.CellValueChanged += DataGridViewReports_CellValueChanged;
+            dataGridViewReports.AutoGenerateColumns = false;
 
             LoadReportsGrid();
         }
@@ -140,7 +143,31 @@ namespace Logo_Project
             }
         }
 
+        private void BtnSettings_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new DbSettingsForm();
+            if (dlg.ShowDialog(this) == DialogResult.OK)
+            {
+                // Rebuild config & runner so new settings take effect now
+                var config = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile("appsettings.json", optional: false)
+                    .Build();
+
+                _sqlQueryRunner = new SqlQueryRunner(config);
+
+                MessageBox.Show(
+                    "Ayarlar kaydedildi. Yeni sorgular güncel veritabanını kullanacak.",
+                    "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
         private void dataGridViewReports_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void dataGridViewReports_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
         {
 
         }

@@ -61,7 +61,7 @@ namespace UI.WinFormsApp
             // Buttons
             btnOnayla.Click += BtnOnayla_Click;
             btnBrowse.Click += BtnBrowse_Click;
-            btnOnayla.Name = "btnOnayla"; 
+            btnOnayla.Name = "btnOnayla";
         }
 
 
@@ -266,6 +266,11 @@ namespace UI.WinFormsApp
         }
 
         private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void cmbPeriod_SelectedIndexChanged_1(object sender, EventArgs e)
         {
 
         }
