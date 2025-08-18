@@ -5,6 +5,7 @@ using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
+using Infrastructure.Logic.Config;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using UI.WinFormsApp;
+
 
 namespace Logo_Project
 {
@@ -148,13 +150,11 @@ namespace Logo_Project
             using var dlg = new DbSettingsForm();
             if (dlg.ShowDialog(this) == DialogResult.OK)
             {
-                // Rebuild config & runner so new settings take effect now
-                var config = new ConfigurationBuilder()
-                    .SetBasePath(AppContext.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: false)
-                    .Build();
+                // Load the settings that were just saved by the dialog
+                var (_, queryDb) = SettingsManager.LoadQueryDb();
 
-                _sqlQueryRunner = new SqlQueryRunner(config);
+                // Rebuild the runner directly from the saved settings
+                _sqlQueryRunner = new SqlQueryRunner(queryDb);
 
                 MessageBox.Show(
                     "Ayarlar kaydedildi. Yeni sorgular güncel veritabanını kullanacak.",

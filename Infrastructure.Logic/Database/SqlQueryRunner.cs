@@ -18,14 +18,23 @@ namespace Infrastructure.Logic.Database
         {
             var dbSettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
 
-            _connectionString = $"Server={dbSettings.Server};" +
-                                $"Database={dbSettings.Database};" +
-                                $"User Id={dbSettings.UserId};" +
-                                $"Password={dbSettings.Password};" +
-                                $"Encrypt={dbSettings.Encrypt};" +
-                                $"TrustServerCertificate={dbSettings.TrustServerCertificate};";
+            _connectionString = BuildConn(dbSettings);
         }
 
+        public SqlQueryRunner(DatabaseSettings dbSettings)
+        {
+            _connectionString = BuildConn(dbSettings);
+        }
+
+        private static string BuildConn(DatabaseSettings s)
+        {
+            return $"Server={s.Server};" +
+                   $"Database={s.Database};" +
+                   $"User Id={s.UserId};" +
+                   $"Password={s.Password};" +
+                   $"Encrypt={s.Encrypt};" +
+                   $"TrustServerCertificate={s.TrustServerCertificate};";
+        }
         public ReportExecutionResult ExecuteQuery(string sql)
         {
             var result = new ReportExecutionResult
