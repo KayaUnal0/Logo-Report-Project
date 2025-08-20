@@ -147,18 +147,26 @@ namespace Logo_Project
 
         private void BtnSettings_Click(object? sender, EventArgs e)
         {
-            using var dlg = new DbSettingsForm();
-            if (dlg.ShowDialog(this) == DialogResult.OK)
+            using var chooser = new SettingsChooserForm();   // modal with 2 buttons: Veritabanı / E-posta
+            if (chooser.ShowDialog(this) == DialogResult.OK)
             {
-                // Load the settings that were just saved by the dialog
-                var (_, queryDb) = SettingsManager.LoadQueryDb();
+                // If Database settings were saved, rebuild the SQL runner immediately
+                if (chooser.DatabaseSaved)
+                {
+                    var (_, queryDb) = SettingsManager.LoadQueryDb();
+                    _sqlQueryRunner = new SqlQueryRunner(queryDb);
+                }
 
-                // Rebuild the runner directly from the saved settings
-                _sqlQueryRunner = new SqlQueryRunner(queryDb);
+                // If Email settings were saved:
+                // (A) If you use EmailJobWrapper / EmailReportExecutor, they re-read appsettings on send,
+                //     so no action is strictly required here.
+                // (B) If you want this UI to also use the new email settings immediately for any direct sends,
+                //     make _emailSender non-readonly and uncomment the next lines:
+                //
+                // var (_, email) = SettingsManager.LoadEmail();
+                // _emailSender = new EmailSender(email);
 
-                MessageBox.Show(
-                    "Ayarlar kaydedildi. Yeni sorgular güncel veritabanını kullanacak.",
-                    "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Ayarlar güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

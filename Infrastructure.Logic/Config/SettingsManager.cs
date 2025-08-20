@@ -34,5 +34,30 @@ namespace Infrastructure.Logic.Config
             var updated = JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(ConfigPath, updated);
         }
+
+        public static (IConfiguration config, EmailSettings email) LoadEmail()
+        {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .Build();
+
+            var settings = config.GetSection("EmailSettings").Get<EmailSettings>() ?? new EmailSettings();
+            return (config, settings);
+        }
+
+        public static void SaveEmail(EmailSettings newSettings)
+        {
+            var json = File.ReadAllText(ConfigPath);
+            var root = JsonSerializer.Deserialize<Dictionary<string, object>>(json)
+                       ?? new Dictionary<string, object>();
+
+            root["EmailSettings"] = newSettings;
+
+            var updated = JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(ConfigPath, updated);
+        }
+
+
     }
 }
