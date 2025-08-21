@@ -274,5 +274,26 @@ namespace UI.WinFormsApp
         {
 
         }
+
+        bool expanded = false;
+
+        private void btnExpandSql_Click(object sender, EventArgs e)
+        {
+            if (!expanded)
+            {
+                rtbSqlQuery.Height = 300; // expand
+                btnExpandSql.Text = "-";
+                expanded = true;
+
+            }
+            else
+            {
+                rtbSqlQuery.Height = 100; // shrink back
+                btnExpandSql.Text = "+";
+                expanded = false;
+
+            }
+        }
+
     }
 }

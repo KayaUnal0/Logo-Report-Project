@@ -32,6 +32,7 @@
             dtpDate = new DateTimePicker();
             lblTime = new Label();
             dtpTime = new DateTimePicker();
+            btnExpandSql = new Button();
             SuspendLayout();
             // 
             // btnOnayla
@@ -273,9 +274,22 @@
             dtpTime.Size = new Size(200, 27);
             dtpTime.TabIndex = 24;
             // 
+            // btnExpandSql
+            // 
+            btnExpandSql.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnExpandSql.Location = new Point(450, 55);
+            btnExpandSql.Name = "btnExpandSql";
+            btnExpandSql.Size = new Size(30, 30);
+            btnExpandSql.TabIndex = 25;
+            btnExpandSql.Text = "+";
+            btnExpandSql.UseVisualStyleBackColor = true;
+            btnExpandSql.Click += btnExpandSql_Click;
+            // 
             // ReportPlannerUI
             // 
             ClientSize = new Size(582, 703);
+            Controls.Add(btnExpandSql);
+            Controls.Add(rtbSqlQuery);
             Controls.Add(dtpTime);
             Controls.Add(lblTime);
             Controls.Add(dtpDate);
@@ -296,7 +310,6 @@
             Controls.Add(lblDirectory);
             Controls.Add(txtEmail);
             Controls.Add(lblEmail);
-            Controls.Add(rtbSqlQuery);
             Controls.Add(lblSql);
             Controls.Add(txtReportTitle);
             Controls.Add(lblReportTitle);
@@ -333,5 +346,6 @@
         private DateTimePicker dtpDate;
         private Label lblTime;
         private DateTimePicker dtpTime;
+        private Button btnExpandSql;
     }
 }
