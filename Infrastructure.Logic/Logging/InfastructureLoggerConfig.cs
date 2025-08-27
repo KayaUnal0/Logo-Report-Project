@@ -7,8 +7,8 @@ namespace Infrastructure.Logic.Logging
     public sealed class InfrastructureLoggerConfig
     {
         private static InfrastructureLoggerConfig _instance;
-        private static readonly object _lock = new();
-        private bool _isInitialized = false;
+        private static readonly object Lock = new();
+        private bool IsInitialized = false;
 
         public ILogger Logger { get; private set; }
 
@@ -18,7 +18,7 @@ namespace Infrastructure.Logic.Logging
         {
             get
             {
-                lock (_lock)
+                lock (Lock)
                 {
                     return _instance ??= new InfrastructureLoggerConfig();
                 }
@@ -27,11 +27,11 @@ namespace Infrastructure.Logic.Logging
 
         public void Init(LoggerSettings settings)
         {
-            if (_isInitialized) return;
+            if (IsInitialized) return;
 
-            lock (_lock)
+            lock (Lock)
             {
-                if (_isInitialized) return;
+                if (IsInitialized) return;
 
                 Logger = new LoggerConfiguration()
                     .MinimumLevel.Is(settings.MinimumLevel)
@@ -40,7 +40,7 @@ namespace Infrastructure.Logic.Logging
                     .Enrich.WithProperty("Project", settings.ProjectName)
                     .CreateLogger();
 
-                _isInitialized = true;
+                IsInitialized = true;
                 Logger.Information("Infrastructure logger initialized at {Path}", settings.FilePath);
             }
         }

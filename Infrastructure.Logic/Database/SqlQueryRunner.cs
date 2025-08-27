@@ -13,17 +13,17 @@ namespace Infrastructure.Logic.Database
 {
     public class SqlQueryRunner : ISqlQueryRunner
     {
-        private readonly string _connectionString;
+        private readonly string ConnectionString;
         public SqlQueryRunner(IConfiguration config)
         {
             var dbSettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
 
-            _connectionString = BuildConn(dbSettings);
+            ConnectionString = BuildConn(dbSettings);
         }
 
         public SqlQueryRunner(DatabaseSettings dbSettings)
         {
-            _connectionString = BuildConn(dbSettings);
+            ConnectionString = BuildConn(dbSettings);
         }
 
         private static string BuildConn(DatabaseSettings s)
@@ -52,7 +52,7 @@ namespace Infrastructure.Logic.Database
                     };
                 }
 
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection(ConnectionString))
                 {
                     connection.Open();
                     InfrastructureLoggerConfig.Instance.Logger.Information("Veritabanına bağlantı sağlandı.");

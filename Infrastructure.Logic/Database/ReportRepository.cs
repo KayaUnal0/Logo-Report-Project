@@ -9,11 +9,11 @@ namespace Infrastructure.Logic.Database
 {
     public class ReportRepository : IReportRepository
     {
-        private readonly string _connectionString;
+        private readonly string ConnectionString;
 
         public ReportRepository(string connectionString)
         {
-            _connectionString = connectionString;
+            ConnectionString = connectionString;
         }
 
         public void SaveReport(ReportDto report)
@@ -21,7 +21,7 @@ namespace Infrastructure.Logic.Database
             var json = JsonSerializer.Serialize(report);
             report.JsonContent = json;
 
-            using var conn = new SqlConnection(_connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             conn.Open();
 
             var cmd = new SqlCommand(@"
@@ -43,7 +43,7 @@ namespace Infrastructure.Logic.Database
         {
             var list = new List<ReportDto>();
 
-            using var conn = new SqlConnection(_connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             conn.Open();
 
             var cmd = new SqlCommand("SELECT JsonContent FROM Reports", conn);
@@ -62,7 +62,7 @@ namespace Infrastructure.Logic.Database
 
         public ReportDto? GetReportBySubject(string subject)
         {
-            using var conn = new SqlConnection(_connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             conn.Open();
 
             var cmd = new SqlCommand("SELECT JsonContent FROM Reports WHERE Subject = @subject", conn);
@@ -81,7 +81,7 @@ namespace Infrastructure.Logic.Database
 
         public void DeleteReport(string subject)
         {
-            using var conn = new SqlConnection(_connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             conn.Open();
 
             var cmd = new SqlCommand(@"
@@ -98,7 +98,7 @@ namespace Infrastructure.Logic.Database
             var json = JsonSerializer.Serialize(report);
             report.JsonContent = json;
 
-            using var conn = new SqlConnection(_connectionString);
+            using var conn = new SqlConnection(ConnectionString);
             conn.Open();
 
             var cmd = new SqlCommand(@"

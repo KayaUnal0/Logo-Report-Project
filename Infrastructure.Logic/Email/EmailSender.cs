@@ -10,11 +10,11 @@ namespace Infrastructure.Logic.Email
 {
     public class EmailSender : IEmailSender
     {
-        private readonly EmailSettings _settings;
+        private readonly EmailSettings Settings;
 
         public EmailSender(EmailSettings settings)
         {
-            _settings = settings;
+            Settings = settings;
         }
 
         public bool Send(string toAddress, string subject, string body, string[] attachmentPaths = null)
@@ -33,7 +33,7 @@ namespace Infrastructure.Logic.Email
 
                 var mail = new MailMessage
                 {
-                    From = new MailAddress(_settings.SenderEmail),
+                    From = new MailAddress(Settings.SenderEmail),
                     Subject = subject,
                     Body = body,
                     IsBodyHtml = true
@@ -51,9 +51,9 @@ namespace Infrastructure.Logic.Email
                     }
                 }
 
-                using var smtpClient = new SmtpClient(_settings.SmtpServer, _settings.SmtpPort)
+                using var smtpClient = new SmtpClient(Settings.SmtpServer, Settings.SmtpPort)
                 {
-                    Credentials = new NetworkCredential(_settings.SenderEmail, _settings.SenderPassword),
+                    Credentials = new NetworkCredential(Settings.SenderEmail, Settings.SenderPassword),
                     EnableSsl = true
                 };
 

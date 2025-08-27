@@ -19,29 +19,29 @@ namespace Logo_Project
 {
     public partial class ReportListUI : Form
     {
-        private readonly IEmailSender _emailSender;
-        private ISqlQueryRunner _sqlQueryRunner;
-        private readonly IHangfireManager _hangfireManager;
-        private readonly IFileSaver _fileSaver;
-        private readonly EmailJob _emailJob;
-        private readonly TemplateRenderer _templateRenderer;
+        private readonly IEmailSender EmailSender;
+        private ISqlQueryRunner SqlQueryRunner;
+        private readonly IHangfireManager HangfireManager;
+        private readonly IFileSaver FileSaver;
+        private readonly EmailJob EmailJob;
+        private readonly TemplateRenderer TemplateRenderer;
 
-        private List<ReportDto> _reports;
+        private List<ReportDto> Reports;
 
-        private readonly IReportRepository _reportRepository;
+        private readonly IReportRepository ReportRepository;
 
 
 
         public ReportListUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
                           IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
-            _emailSender = emailSender;
-            _sqlQueryRunner = sqlQueryRunner;
-            _hangfireManager = hangfireManager;
-            _fileSaver = fileSaver;
-            _emailJob = emailJob;
-            _templateRenderer = templateRenderer;
-            _reportRepository = reportRepository;
+            EmailSender = emailSender;
+            SqlQueryRunner = sqlQueryRunner;
+            HangfireManager = hangfireManager;
+            FileSaver = fileSaver;
+            EmailJob = emailJob;
+            TemplateRenderer = templateRenderer;
+            ReportRepository = reportRepository;
 
             InitializeComponent();
 
@@ -60,15 +60,15 @@ namespace Logo_Project
 
         private void LoadReportsGrid()
         {
-            _reports = _reportRepository.GetReports();
+            Reports = ReportRepository.GetReports();
 
-            dataGridViewReports.DataSource = _reports;
+            dataGridViewReports.DataSource = Reports;
         }
 
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            var form = new ReportPlannerUI(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
+            var form = new ReportPlannerUI(EmailSender, SqlQueryRunner, HangfireManager, FileSaver, EmailJob, TemplateRenderer, ReportRepository);
             form.ShowDialog();
             LoadReportsGrid();
         }
@@ -82,9 +82,9 @@ namespace Logo_Project
             }
 
             var index = dataGridViewReports.CurrentRow.Index;
-            var selected = _reports[index];
+            var selected = Reports[index];
 
-            var form = new ReportPlannerUI(_emailSender, _sqlQueryRunner, _hangfireManager, _fileSaver, _emailJob, _templateRenderer, _reportRepository);
+            var form = new ReportPlannerUI(EmailSender, SqlQueryRunner, HangfireManager, FileSaver, EmailJob, TemplateRenderer, ReportRepository);
             form.LoadReport(selected);
             form.ShowDialog();
             LoadReportsGrid();
@@ -99,22 +99,22 @@ namespace Logo_Project
             }
 
             var index = dataGridViewReports.CurrentRow.Index;
-            var selected = _reports[index];
+            var selected = Reports[index];
 
             var confirm = MessageBox.Show($"'{selected.Subject}' başlıklı raporu silmek istiyor musunuz?", "Onayla", MessageBoxButtons.YesNo);
             if (confirm == DialogResult.Yes)
             {
-                _reportRepository.DeleteReport(selected.Subject);
-                _hangfireManager.RemoveRecurringJob(selected.Subject);
+                ReportRepository.DeleteReport(selected.Subject);
+                HangfireManager.RemoveRecurringJob(selected.Subject);
                 LoadReportsGrid();
             }
         }
 
         private void HomeScreen_Load(object sender, EventArgs e)
         {
-            foreach (var report in _reports.Where(r => r.Active))
+            foreach (var report in Reports.Where(r => r.Active))
             {
-                _hangfireManager.ScheduleRecurringEmailJobs(report);
+                HangfireManager.ScheduleRecurringEmailJobs(report);
             }
         }
 
@@ -135,36 +135,27 @@ namespace Logo_Project
             {
                 if (dataGridViewReports.Rows[e.RowIndex].DataBoundItem is ReportDto report)
                 {
-                    _reportRepository.UpdateReport(report.Subject, report);
+                    ReportRepository.UpdateReport(report.Subject, report);
 
                     if (report.Active)
-                        _hangfireManager.ScheduleRecurringEmailJobs(report);
+                        HangfireManager.ScheduleRecurringEmailJobs(report);
                     else
-                        _hangfireManager.RemoveRecurringJob(report.Subject);
+                        HangfireManager.RemoveRecurringJob(report.Subject);
                 }
             }
         }
 
         private void BtnSettings_Click(object? sender, EventArgs e)
         {
-            using var chooser = new SettingsChooserForm();   // modal with 2 buttons: Veritabanı / E-posta
+            using var chooser = new SettingsChooserForm();   //Veritabanı / E-posta modal
             if (chooser.ShowDialog(this) == DialogResult.OK)
             {
                 // If Database settings were saved, rebuild the SQL runner immediately
                 if (chooser.DatabaseSaved)
                 {
                     var (_, queryDb) = SettingsManager.LoadQueryDb();
-                    _sqlQueryRunner = new SqlQueryRunner(queryDb);
+                    SqlQueryRunner = new SqlQueryRunner(queryDb);
                 }
-
-                // If Email settings were saved:
-                // (A) If you use EmailJobWrapper / EmailReportExecutor, they re-read appsettings on send,
-                //     so no action is strictly required here.
-                // (B) If you want this UI to also use the new email settings immediately for any direct sends,
-                //     make _emailSender non-readonly and uncomment the next lines:
-                //
-                // var (_, email) = SettingsManager.LoadEmail();
-                // _emailSender = new EmailSender(email);
 
                 MessageBox.Show("Ayarlar güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

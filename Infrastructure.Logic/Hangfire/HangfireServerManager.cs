@@ -19,14 +19,14 @@ namespace Infrastructure.Logic.Hangfire
 {
     public class HangfireServerManager : IHangfireManager
     {
-        private BackgroundJobServer? _server;
-        private readonly EmailJob _emailJob;
-        private readonly string _connectionString;
+        private BackgroundJobServer? Server;
+        private readonly EmailJob EmailJob;
+        private readonly string ConnectionString;
 
         public HangfireServerManager(EmailJob emailJob, string connectionString)
         {
-            _emailJob = emailJob;
-            _connectionString = connectionString;
+            EmailJob = emailJob;
+            ConnectionString = connectionString;
         }
 
         public void Start()
@@ -36,14 +36,14 @@ namespace Infrastructure.Logic.Hangfire
 
             Task.Run(() => StartWebServer());
 
-            _server = new BackgroundJobServer();
+            Server = new BackgroundJobServer();
 
         }
 
         public void Stop()
         {
             ClearAllHangfireJobs();
-            _server?.Dispose();
+            Server?.Dispose();
             InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu durduruldu.");
         }
 
@@ -109,12 +109,6 @@ namespace Infrastructure.Logic.Hangfire
             var jobStorage = JobStorage.Current;
             var monitoringApi = jobStorage.GetMonitoringApi();
 
-            // Recurring Jobs
-            // var recurringJobs = monitoringApi.RecurringJobs();
-            //foreach (var job in recurringJobs)
-            //{
-            //    RecurringJob.RemoveIfExists(job.Id);
-            //}
 
             // Scheduled Jobs
             var scheduledJobs = monitoringApi.ScheduledJobs(0, int.MaxValue);
@@ -175,7 +169,7 @@ namespace Infrastructure.Logic.Hangfire
 
             builder.Services.AddHangfire(cfg =>
             {
-                cfg.UseSqlServerStorage(_connectionString);
+                cfg.UseSqlServerStorage(ConnectionString);
             });
 
             builder.Services.AddHangfireServer();

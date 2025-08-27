@@ -7,8 +7,8 @@ namespace Logo_Project.Logging
     public sealed class UIWinFormsLoggerConfig
     {
         private static UIWinFormsLoggerConfig _instance;
-        private static readonly object _lock = new();
-        private bool _isInitialized = false;
+        private static readonly object Lock = new();
+        private bool IsInitialized = false;
 
         public ILogger Logger { get; private set; } // Project-specific logger
 
@@ -18,7 +18,7 @@ namespace Logo_Project.Logging
         {
             get
             {
-                lock (_lock)
+                lock (Lock)
                 {
                     return _instance ??= new UIWinFormsLoggerConfig();
                 }
@@ -27,11 +27,11 @@ namespace Logo_Project.Logging
 
         public void Init(LoggerSettings settings)
         {
-            if (_isInitialized) return;
+            if (IsInitialized) return;
 
-            lock (_lock)
+            lock (Lock)
             {
-                if (_isInitialized) return;
+                if (IsInitialized) return;
 
                 Logger = new LoggerConfiguration()
                     .MinimumLevel.Is(settings.MinimumLevel)
@@ -40,7 +40,7 @@ namespace Logo_Project.Logging
                     .Enrich.WithProperty("Project", settings.ProjectName)
                     .CreateLogger();
 
-                _isInitialized = true;
+                IsInitialized = true;
                 Logger.Information("UI logger initialized at {Path}", settings.FilePath);
             }
         }

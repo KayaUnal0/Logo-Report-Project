@@ -21,14 +21,14 @@ namespace UI.WinFormsApp
 {
     public partial class ReportPlannerUI : Form
     {
-        private readonly ISqlQueryRunner _sqlQueryRunner;
-        private readonly IHangfireManager _hangfireManager;
-        private readonly EmailJob _emailJob;
-        private readonly IFileSaver _fileSaver;
-        private readonly TemplateRenderer _templateRenderer;
-        private readonly IReportRepository _reportRepository;
+        private readonly ISqlQueryRunner SqlQueryRunner;
+        private readonly IHangfireManager HangfireManager;
+        private readonly EmailJob EmailJob;
+        private readonly IFileSaver FileSaver;
+        private readonly TemplateRenderer TemplateRenderer;
+        private readonly IReportRepository ReportRepository;
         private bool isEditMode = false;
-        private string _originalTitle;
+        private string OriginalTitle;
         private ReportDto currentReport = null;
 
         private List<CheckBox> dayCheckboxes = new();
@@ -37,12 +37,12 @@ namespace UI.WinFormsApp
         public ReportPlannerUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
                      IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
         {
-            _sqlQueryRunner = sqlQueryRunner;
-            _hangfireManager = hangfireManager;
-            _emailJob = emailJob;
-            _fileSaver = fileSaver;
-            _templateRenderer = templateRenderer;
-            _reportRepository = reportRepository;
+            SqlQueryRunner = sqlQueryRunner;
+            HangfireManager = hangfireManager;
+            EmailJob = emailJob;
+            FileSaver = fileSaver;
+            TemplateRenderer = templateRenderer;
+            ReportRepository = reportRepository;
 
             InitializeComponent();
             // Build the weekly checkbox list used by logic
@@ -95,7 +95,7 @@ namespace UI.WinFormsApp
                     .ToList();
 
                 // Execute SQL query
-                var result = _sqlQueryRunner.ExecuteQuery(report.Query);
+                var result = SqlQueryRunner.ExecuteQuery(report.Query);
 
                 // File paths and template rendering
                 string csvPath = null;
@@ -130,13 +130,13 @@ namespace UI.WinFormsApp
 
                 // Save or update report
                 if (isEditMode)
-                    _reportRepository.UpdateReport(_originalTitle, report);
+                    ReportRepository.UpdateReport(OriginalTitle, report);
                 else
 
-                    _reportRepository.SaveReport(report);
+                    ReportRepository.SaveReport(report);
 
                 // Schedule recurring jobs
-                _hangfireManager.ScheduleRecurringEmailJobs(report);
+                HangfireManager.ScheduleRecurringEmailJobs(report);
 
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.",
                     "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -164,7 +164,7 @@ namespace UI.WinFormsApp
 
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
-            _originalTitle = report.Subject;
+            OriginalTitle = report.Subject;
 
             var dtpTime = Controls.Find("dtpTime", true).FirstOrDefault() as DateTimePicker;
             if (dtpTime != null)
@@ -277,23 +277,13 @@ namespace UI.WinFormsApp
 
         bool expanded = false;
 
-        private void btnExpandSql_Click(object sender, EventArgs e)
+        private void btnExpandSql_Click(object? sender, EventArgs e)
         {
-            if (!expanded)
-            {
-                rtbSqlQuery.Height = 300; // expand
-                btnExpandSql.Text = "-";
-                expanded = true;
-
-            }
-            else
-            {
-                rtbSqlQuery.Height = 100; // shrink back
-                btnExpandSql.Text = "+";
-                expanded = false;
-
-            }
+            var sql = rtbSqlQuery.Text;
+            if (Logo_Project.Report_Planner_Page.SqlEditorForm.Edit(this, ref sql))
+                rtbSqlQuery.Text = sql;
         }
+
 
     }
 }
