@@ -10,14 +10,14 @@ public static class EmailJobWrapper
 
     public static void SendEmail(string email, string subject, string body)
     {
-        var (_, settings) = SettingsManager.LoadEmail();  // ✅ decrypted
+        var (_, settings) = SettingsManager.LoadEmail(); 
         var sender = new Infrastructure.Logic.Email.EmailSender(settings);
         sender.Send(email, subject, body);
     }
 
     public static void SendEmail(string email, string subject, string body, string[] attachments)
     {
-        var (_, settings) = SettingsManager.LoadEmail();  // ✅ decrypted
+        var (_, settings) = SettingsManager.LoadEmail();
         var sender = new Infrastructure.Logic.Email.EmailSender(settings);
         sender.Send(email, subject, body, attachments);
     }

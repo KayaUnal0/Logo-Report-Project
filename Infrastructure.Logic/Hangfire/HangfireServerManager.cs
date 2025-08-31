@@ -38,13 +38,6 @@ namespace Infrastructure.Logic.Hangfire
 
         }
 
-        public void Stop()
-        {
-            ClearAllHangfireJobs();
-            Server?.Dispose();
-            InfrastructureLoggerConfig.Instance.Logger.Information("Hangfire sunucusu durduruldu.");
-        }
-
         public void Enqueue(Expression<Action> methodCall)
         {
             BackgroundJob.Enqueue(methodCall);
@@ -100,59 +93,6 @@ namespace Infrastructure.Logic.Hangfire
                     TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul")
                 }
             );
-        }
-
-        public static void ClearAllHangfireJobs()
-        {
-            var jobStorage = JobStorage.Current;
-            var monitoringApi = jobStorage.GetMonitoringApi();
-
-
-            // Scheduled Jobs
-            var scheduledJobs = monitoringApi.ScheduledJobs(0, int.MaxValue);
-            foreach (var job in scheduledJobs)
-            {
-                BackgroundJob.Delete(job.Key);
-            }
-
-            // Enqueued Jobs
-            var queues = monitoringApi.Queues();
-            foreach (var queue in queues)
-            {
-                var enqueuedJobs = monitoringApi.EnqueuedJobs(queue.Name, 0, int.MaxValue);
-                foreach (var job in enqueuedJobs)
-                {
-                    BackgroundJob.Delete(job.Key);
-                }
-            }
-
-            // Processing Jobs (isteğe bağlı, genelde bu anlık işlerdir)
-            var processingJobs = monitoringApi.ProcessingJobs(0, int.MaxValue);
-            foreach (var job in processingJobs)
-            {
-                BackgroundJob.Delete(job.Key);
-            }
-
-            // Failed Jobs
-            var failedJobs = monitoringApi.FailedJobs(0, int.MaxValue);
-            foreach (var job in failedJobs)
-            {
-                BackgroundJob.Delete(job.Key);
-            }
-
-            // Succeeded Jobs (İsteğe bağlı: genelde log amaçlı tutulur)
-            var succeededJobs = monitoringApi.SucceededJobs(0, int.MaxValue);
-            foreach (var job in succeededJobs)
-            {
-                BackgroundJob.Delete(job.Key);
-            }
-
-            // Deleted Jobs da varsa temizleyebilirsin
-            var deletedJobs = monitoringApi.DeletedJobs(0, int.MaxValue);
-            foreach (var job in deletedJobs)
-            {
-                BackgroundJob.Delete(job.Key);
-            }
         }
 
         public void RemoveRecurringJob(string subject)
