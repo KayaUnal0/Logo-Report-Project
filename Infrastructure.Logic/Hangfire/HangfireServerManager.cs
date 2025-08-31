@@ -31,11 +31,9 @@ namespace Infrastructure.Logic.Hangfire
 
         public void Start()
         {
-            GlobalConfiguration.Configuration
-                .UseMemoryStorage();
+            GlobalConfiguration.Configuration.UseSqlServerStorage(ConnectionString);
 
             Task.Run(() => StartWebServer());
-
             Server = new BackgroundJobServer();
 
         }

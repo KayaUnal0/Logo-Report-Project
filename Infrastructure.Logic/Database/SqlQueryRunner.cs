@@ -2,6 +2,7 @@
 using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
+using Infrastructure.Logic.Config;
 using Infrastructure.Logic.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
@@ -14,10 +15,9 @@ namespace Infrastructure.Logic.Database
     public class SqlQueryRunner : ISqlQueryRunner
     {
         private readonly string ConnectionString;
-        public SqlQueryRunner(IConfiguration config)
+        public SqlQueryRunner(IConfiguration _)
         {
-            var dbSettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
-
+            var (_, dbSettings) = SettingsManager.LoadQueryDb(); // decrypted Password (from PasswordEnc if present)
             ConnectionString = BuildConn(dbSettings);
         }
 
@@ -25,6 +25,7 @@ namespace Infrastructure.Logic.Database
         {
             ConnectionString = BuildConn(dbSettings);
         }
+
 
         private static string BuildConn(DatabaseSettings s)
         {

@@ -3,6 +3,7 @@ using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
 using Hangfire;
+using Infrastructure.Logic.Config;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Filesystem;
@@ -27,17 +28,17 @@ namespace Infrastructure.Logic.Jobs
                     .SetBasePath(AppContext.BaseDirectory)
                     .AddJsonFile("appsettings.json", optional: false)
                     .Build();
-
                 // Settings
-                var emailSettings = config.GetSection("EmailSettings").Get<EmailSettings>();
-                var dbSettings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>();
-                var connectionString = dbSettings.ToConnectionString();
+                var (_, email) = SettingsManager.LoadEmail(); 
+                var (_, queryDb) = SettingsManager.LoadQueryDb();
+                var (_, appDb) = SettingsManager.LoadAppDb();  
+                var connectionString = appDb.ToConnectionString();
 
                 // Services
-                var sender = new EmailSender(emailSettings);
-                var sqlRunner = new SqlQueryRunner(config);
+                var sender = new EmailSender(email);
+                var sqlRunner = new SqlQueryRunner(queryDb);
                 var templateRenderer = new TemplateRenderer();
-                var reportRepo = new ReportRepository(connectionString); 
+                var reportRepo = new ReportRepository(connectionString);
 
                 // Get report
                 var report = reportRepo.GetReportBySubject(reportSubject);
@@ -50,28 +51,32 @@ namespace Infrastructure.Logic.Jobs
                 // Run SQL
                 var result = sqlRunner.ExecuteQuery(report.Query);
 
-                // Build HTML body (table)
-                var tableHtml = HtmlTableBuilder.FromTsvLines(result.Results);
+                // Build Scriban table model from TSV
+                var tableModel = BuildScribanTable(result.Results);
+
+                // Render the whole email with Scriban (template contains table markup)
                 var htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
                 {
                     subject = report.Subject,
                     status = result.Status.ToString(),
-                    results_table = tableHtml,
+                    table = tableModel,              // <-- pass the model (headers + rows)
                     filePath = report.Directory
                 }).Result;
+
 
                 // Attachments
                 var attachments = new List<string>();
                 var safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
                 var fileSaver = new FileSaver();
 
-                if (report.FileType.Contains("Excel"))
+                var fileType = (report.FileType ?? "").ToLowerInvariant();
+                if (fileType.Contains("excel"))
                 {
                     var csvPath = fileSaver.SaveCsvToFile(report.Directory, safeFileName + ".csv", result.Results);
                     if (!string.IsNullOrEmpty(csvPath)) attachments.Add(csvPath);
                 }
 
-                if (report.FileType.Contains("HTML"))
+                if (fileType.Contains("html"))
                 {
                     // Save as full HTML document
                     var htmlPath = fileSaver.SaveHtmlToFile(report.Directory, safeFileName + ".html", htmlBody);
@@ -88,5 +93,51 @@ namespace Infrastructure.Logic.Jobs
                 InfrastructureLoggerConfig.Instance.Logger.Error(ex, "Zamanlanmış rapor yürütülürken hata oluştu: {Subject} ({Day})", reportSubject, dayString);
             }
         }
+
+        private static object BuildScribanTable(List<string> tsvLines)
+        {
+            if (tsvLines == null || tsvLines.Count == 0)
+            {
+                return new { headers = Array.Empty<string>(), rows = Array.Empty<object[]>() };
+            }
+
+            var headers = (tsvLines[0] ?? string.Empty).Split('\t');
+
+            var rows = new List<object[]>();
+            for (int i = 1; i < tsvLines.Count; i++)
+            {
+                var cells = (tsvLines[i] ?? string.Empty).Split('\t');
+                var row = new object[cells.Length];
+
+                for (int c = 0; c < cells.Length; c++)
+                {
+                    var val = cells[c] ?? string.Empty;
+                    row[c] = new
+                    {
+                        value = val,
+                        is_numeric = IsNumeric(val)
+                    };
+                }
+
+                rows.Add(row);
+            }
+
+            // object shape that matches your Scriban template
+            return new
+            {
+                headers = headers,
+                rows = rows
+            };
+        }
+
+        private static bool IsNumeric(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return double.TryParse(value, System.Globalization.NumberStyles.Any,
+                                   System.Globalization.CultureInfo.InvariantCulture, out _)
+                || double.TryParse(value, System.Globalization.NumberStyles.Any,
+                                   System.Globalization.CultureInfo.CurrentCulture, out _);
+        }
+
     }
 }

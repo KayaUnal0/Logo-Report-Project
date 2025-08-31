@@ -105,6 +105,29 @@ namespace Infrastructure.Logic.Config
             File.WriteAllText(ConfigPath, updated);
         }
 
+        public static (IConfiguration config, DatabaseSettings appDb) LoadAppDb()
+        {
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+                .Build();
 
+            var settings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>() ?? new DatabaseSettings();
+
+            // Decrypt AppDatabaseSettings.PasswordEnc → settings.Password
+            if (File.Exists(ConfigPath))
+            {
+                var json = File.ReadAllText(ConfigPath);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("AppDatabaseSettings", out var sec))
+                {
+                    if (sec.TryGetProperty("PasswordEnc", out var encEl) && encEl.ValueKind == JsonValueKind.String)
+                    {
+                        settings.Password = SecretProtector.Unprotect(encEl.GetString());
+                    }
+                }
+            }
+            return (config, settings);
+        }
     }
 }

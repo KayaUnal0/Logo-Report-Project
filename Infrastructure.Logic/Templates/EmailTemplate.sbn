@@ -1,14 +1,51 @@
-﻿<div>
-	<h1>{{ subject }}</h1>
+﻿{{- header_bg = "#4A90E2" -}}
+{{- header_fg = "#FFFFFF" -}}
+{{- odd_bg    = "#FFFFFF" -}}
+{{- even_bg   = "#F4F6F8" -}}
+{{- border    = "#DDDDDD" -}}
+{{- font      = "Arial, Helvetica, sans-serif" -}}
+
+<div>
+	<h1>{{ subject | html.escape }}</h1>
 	<p>Merhaba,</p>
 	<p>Raporunuz hazır. Detaylar aşağıdadır:</p>
+
 	<p>
-		<strong>Durum:</strong> {{ status }}
+		<strong>Durum:</strong> {{ status | html.escape }}
 	</p>
 
-	{{ results_table }}
+	{{ if table && table.headers && table.headers.size > 0 }}
+	<div style="max-width:100%;overflow:auto;">
+		<table cellpadding="6" cellspacing="0"
+			   style="border-collapse:collapse;width:100%;font-size:13px;font-family:{{ font }};color:#333;">
+			<thead>
+				<tr style="background:{{ header_bg }};color:{{ header_fg }};">
+					{{ for h in table.headers }}
+					<th style="border:1px solid {{ border }};font-weight:bold;text-align:left;">
+						{{ h | html.escape }}
+					</th>
+					{{ end }}
+				</tr>
+			</thead>
+			<tbody>
+				{{ for row in table.rows }}
+				{{ row_bg = (for.index % 2 == 0) ? odd_bg : even_bg }}
+				<tr style="background:{{ row_bg }};">
+					{{ for cell in row }}
+					<td style="border:1px solid {{ border }};white-space:nowrap;text-align:{{ cell.is_numeric ? 'right' : 'left' }};">
+						{{ cell.value | html.escape }}
+					</td>
+					{{ end }}
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	</div>
+	{{ else }}
+	<em>Sonuç bulunamadı</em>
+	{{ end }}
 
 	<p>
-		<strong>Dizin:</strong> {{ filePath }}
+		<strong>Dizin:</strong> {{ filePath | html.escape }}
 	</p>
 </div>
