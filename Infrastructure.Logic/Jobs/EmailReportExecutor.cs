@@ -31,7 +31,8 @@ namespace Infrastructure.Logic.Jobs
                 // Settings
                 var (_, email) = SettingsManager.LoadEmail(); 
                 var (_, queryDb) = SettingsManager.LoadQueryDb();
-                var (_, appDb) = SettingsManager.LoadAppDb();  
+                var (_, appDb) = SettingsManager.LoadAppDb();
+
                 var connectionString = appDb.ToConnectionString();
 
                 // Services

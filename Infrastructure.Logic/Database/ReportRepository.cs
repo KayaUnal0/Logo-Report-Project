@@ -1,5 +1,6 @@
 ﻿using Common.Shared.Dtos;
 using Core.Interfaces;
+using Infrastructure.Logic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;

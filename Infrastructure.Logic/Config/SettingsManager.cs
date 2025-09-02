@@ -30,7 +30,7 @@ namespace Infrastructure.Logic.Config
                 {
                     if (dbSec.TryGetProperty("PasswordEnc", out var encEl) && encEl.ValueKind == JsonValueKind.String)
                     {
-                        settings.Password = SecretProtector.Unprotect(encEl.GetString());
+                        settings.Password = Infrastructure.Logic.Security.CryptoProtector.Decrypt(encEl.GetString(), Infrastructure.Logic.Security.MasterSecret.Get());
                     }
                 }
             }
@@ -52,7 +52,7 @@ namespace Infrastructure.Logic.Config
                 ["UserId"] = newSettings.UserId,
                 ["Encrypt"] = newSettings.Encrypt,
                 ["TrustServerCertificate"] = newSettings.TrustServerCertificate,
-                ["PasswordEnc"] = SecretProtector.Protect(newSettings.Password)
+                ["PasswordEnc"] = Infrastructure.Logic.Security.CryptoProtector.Encrypt(newSettings.Password, Infrastructure.Logic.Security.MasterSecret.Get())
             };
 
 
@@ -77,7 +77,7 @@ namespace Infrastructure.Logic.Config
                 {
                     if (sec.TryGetProperty("SenderPasswordEnc", out var encEl) && encEl.ValueKind == JsonValueKind.String)
                     {
-                        settings.SenderPassword = SecretProtector.Unprotect(encEl.GetString());
+                        settings.SenderPassword = Infrastructure.Logic.Security.CryptoProtector.Decrypt(encEl.GetString(), Infrastructure.Logic.Security.MasterSecret.Get());
                     }
                 }
             }
@@ -97,7 +97,7 @@ namespace Infrastructure.Logic.Config
                 ["SenderEmail"] = newSettings.SenderEmail,
                 ["SmtpServer"] = newSettings.SmtpServer,
                 ["SmtpPort"] = newSettings.SmtpPort,
-                ["SenderPasswordEnc"] = SecretProtector.Protect(newSettings.SenderPassword)
+                ["SenderPasswordEnc"] = Infrastructure.Logic.Security.CryptoProtector.Encrypt(newSettings.SenderPassword, Infrastructure.Logic.Security.MasterSecret.Get())
             };
 
 
@@ -114,7 +114,7 @@ namespace Infrastructure.Logic.Config
 
             var settings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>() ?? new DatabaseSettings();
 
-            // Decrypt AppDatabaseSettings.PasswordEnc → settings.Password
+            // Decrypt AppDatabaseSettings.PasswordEnc -> settings.Password
             if (File.Exists(ConfigPath))
             {
                 var json = File.ReadAllText(ConfigPath);
@@ -123,11 +123,42 @@ namespace Infrastructure.Logic.Config
                 {
                     if (sec.TryGetProperty("PasswordEnc", out var encEl) && encEl.ValueKind == JsonValueKind.String)
                     {
-                        settings.Password = SecretProtector.Unprotect(encEl.GetString());
+                        settings.Password = Infrastructure.Logic.Security.CryptoProtector.Decrypt(
+                            encEl.GetString(),
+                            Infrastructure.Logic.Security.MasterSecret.Get()
+                        );
                     }
+
                 }
             }
             return (config, settings);
         }
+
+
+        // SAVE: write AppDatabaseSettings with PasswordEnc (encrypted), no plaintext Password
+        public static void SaveAppDb(DatabaseSettings newSettings)
+        {
+            var json = File.ReadAllText(ConfigPath);
+            var root = JsonSerializer.Deserialize<Dictionary<string, object>>(json)
+                       ?? new Dictionary<string, object>();
+
+            var master = Infrastructure.Logic.Security.MasterSecret.Get();
+            var encPwd = Infrastructure.Logic.Security.CryptoProtector.Encrypt(newSettings.Password, master);
+
+            root["AppDatabaseSettings"] = new Dictionary<string, object?>
+            {
+                ["Server"] = newSettings.Server,
+                ["Database"] = newSettings.Database,
+                ["UserId"] = newSettings.UserId,
+                ["Encrypt"] = newSettings.Encrypt,
+                ["TrustServerCertificate"] = newSettings.TrustServerCertificate,
+                ["PasswordEnc"] = encPwd
+                // deliberately NOT writing plaintext Password
+            };
+
+            var updated = JsonSerializer.Serialize(root, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(ConfigPath, updated);
+        }
+
     }
 }

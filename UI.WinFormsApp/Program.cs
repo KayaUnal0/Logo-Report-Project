@@ -2,8 +2,7 @@
 using Common.Shared.Dtos;
 using Core.Interfaces;
 using Hangfire;
-using Hangfire.MemoryStorage;
-using Hangfire.SqlServer;
+using Infrastructure.Logic.Config;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
 using Infrastructure.Logic.Filesystem;
@@ -12,8 +11,6 @@ using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Logging;
 using Infrastructure.Logic.Templates;
 using Logo_Project.Logging;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Serilog.Events;
 using System;
 using System.Windows.Forms;
@@ -26,60 +23,64 @@ namespace Logo_Project
         [STAThread]
         static void Main()
         {
-            // Logging configuration
-            // Setup logger settings
+            // 1) Logging
             var uiLoggerSettings = new LoggerSettings
             {
                 ProjectName = "UI",
                 FilePath = "Logs/ui-winforms-log-.txt",
                 MinimumLevel = LogEventLevel.Information
             };
-
             var infraLoggerSettings = new LoggerSettings
             {
                 ProjectName = "Infrastructure",
                 FilePath = "Logs/infrastructure-log-.txt",
                 MinimumLevel = LogEventLevel.Debug
             };
-
             UIWinFormsLoggerConfig.Instance.Init(uiLoggerSettings);
+            InfrastructureLoggerConfig.Instance.Logger?.Information("Bootstrapping...");
             InfrastructureLoggerConfig.Instance.Init(infraLoggerSettings);
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false)
-                .Build();
+            // Deccrypt Secrets
+            var (_, emailSettings) = SettingsManager.LoadEmail();   
+            var (_, queryDb) = SettingsManager.LoadQueryDb();    
+            var (_, appDb) = SettingsManager.LoadAppDb();     
 
-            var dbQuerySettings = config.GetSection("QueryDatabaseSettings").Get<DatabaseSettings>();
-            string connectionQueryString = dbQuerySettings.ToConnectionString();
+            // Guard (helps diagnose master key issues)
+            if (string.IsNullOrWhiteSpace(appDb?.Password))
+            {
+                InfrastructureLoggerConfig.Instance.Logger.Error(
+                    "App DB password missing after LoadAppDb(). Check LOGO_APP_MASTER_KEY and AppDatabaseSettings.PasswordEnc.");
+                MessageBox.Show("App DB password is missing (decryption failed). See logs.", "Startup Error",
+                                MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-            var dbAppSettings = config.GetSection("AppDatabaseSettings").Get<DatabaseSettings>();
-            string connectionAppString = dbAppSettings.ToConnectionString();
+            // Build connection strings
+            var connectionAppString = appDb.ToConnectionString();
+            var connectionQueryString = queryDb.ToConnectionString();
 
-            // Setup Hangfire to use memory storage
-            GlobalConfiguration.Configuration
-                .UseSqlServerStorage(connectionAppString);
+            GlobalConfiguration.Configuration.UseSqlServerStorage(connectionAppString);
 
+            //Start Hangfire server
             using var server = new BackgroundJobServer();
 
 
-            // Manually initialize dependencies
-            var emailSettings = config.GetSection("EmailSettings").Get<EmailSettings>();
             var emailSender = new EmailSender(emailSettings);
             var emailJob = new EmailJob(emailSender);
-
             EmailJobWrapper.JobInstance = emailJob;
 
-            var sqlRunner = new SqlQueryRunner(config);
-            var hangfireManager = new HangfireServerManager(emailJob, connectionAppString);
+            var sqlRunner = new SqlQueryRunner(queryDb);
             var fileSaver = new FileSaver();
             var templateRenderer = new TemplateRenderer();
             var reportRepository = new ReportRepository(connectionAppString);
 
+            var hangfireManager = new HangfireServerManager(emailJob, connectionAppString);
             hangfireManager.Start();
 
+            //Run UI
             ApplicationConfiguration.Initialize();
-            Application.Run(new ReportListUI(emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
+            Application.Run(new ReportListUI(
+                emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 
+// KULLANIM DIŞI
 namespace Infrastructure.Logic.Templates
 {
     public static class HtmlTableBuilder
