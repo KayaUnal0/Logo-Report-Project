@@ -24,75 +24,117 @@ namespace Infrastructure.Logic.Jobs
         {
             try
             {
-                var config = new ConfigurationBuilder()
-                    .SetBasePath(AppContext.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: false)
-                    .Build();
-                // Settings
-                var (_, email) = SettingsManager.LoadEmail(); 
-                var (_, queryDb) = SettingsManager.LoadQueryDb();
-                var (_, appDb) = SettingsManager.LoadAppDb();
+                var (email, queryDb, appDb) = LoadAllSettings();
+                var appConn = appDb.ToConnectionString();
 
-                var connectionString = appDb.ToConnectionString();
+                var (sender, sqlRunner, templateRenderer, reportRepo, fileSaver) =
+                    BuildServices(email, queryDb, appConn);
 
-                // Services
-                var sender = new EmailSender(email);
-                var sqlRunner = new SqlQueryRunner(queryDb);
-                var templateRenderer = new TemplateRenderer();
-                var reportRepo = new ReportRepository(connectionString);
+                var report = GetReportOrLog(reportRepo, reportSubject);
+                if (report is null) return;
 
-                // Get report
-                var report = reportRepo.GetReportBySubject(reportSubject);
-                if (report == null)
-                {
-                    InfrastructureLoggerConfig.Instance.Logger.Warning("'{Subject}' başlıklı rapor bulunamadı.", reportSubject);
-                    return;
-                }
-
-                // Run SQL
                 var result = sqlRunner.ExecuteQuery(report.Query);
 
-                // Build Scriban table model from TSV
-                var tableModel = BuildScribanTable(result.Results);
-
-                // Render the whole email with Scriban (template contains table markup)
-                var htmlBody = templateRenderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
-                {
-                    subject = report.Subject,
-                    status = result.Status.ToString(),
-                    table = tableModel,              // <-- pass the model (headers + rows)
-                    filePath = report.Directory
-                }).Result;
+                var htmlBody = RenderEmail(templateRenderer, report, result);
 
 
-                // Attachments
-                var attachments = new List<string>();
-                var safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
-                var fileSaver = new FileSaver();
+                var attachments = BuildAttachments(fileSaver, report, result, htmlBody);
 
-                var fileType = (report.FileType ?? "").ToLowerInvariant();
-                if (fileType.Contains("excel"))
-                {
-                    var csvPath = fileSaver.SaveCsvToFile(report.Directory, safeFileName + ".csv", result.Results);
-                    if (!string.IsNullOrEmpty(csvPath)) attachments.Add(csvPath);
-                }
+                SendReport(sender, report, htmlBody, attachments);
 
-                if (fileType.Contains("html"))
-                {
-                    // Save as full HTML document
-                    var htmlPath = fileSaver.SaveHtmlToFile(report.Directory, safeFileName + ".html", htmlBody);
-                    attachments.Add(htmlPath);
-                }
-
-                // Send
-                sender.Send(report.Email, report.Subject, htmlBody, attachments.ToArray());
-
-                InfrastructureLoggerConfig.Instance.Logger.Information("Zamanlanmış rapor gönderildi: {Subject} ({Day})", reportSubject, dayString);
+                InfrastructureLoggerConfig.Instance.Logger.Information(
+                    "Zamanlanmış rapor gönderildi: {Subject} ({Day})", reportSubject, dayString);
             }
             catch (Exception ex)
             {
-                InfrastructureLoggerConfig.Instance.Logger.Error(ex, "Zamanlanmış rapor yürütülürken hata oluştu: {Subject} ({Day})", reportSubject, dayString);
+                InfrastructureLoggerConfig.Instance.Logger.Error(
+                    ex, "Zamanlanmış rapor yürütülürken hata oluştu: {Subject} ({Day})", reportSubject, dayString);
             }
+        }
+
+        private static (EmailSettings email, DatabaseSettings queryDb, DatabaseSettings appDb) LoadAllSettings()
+        {
+            // IConfiguration is still built, but we rely on SettingsManager to decrypt sensitive values
+            _ = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
+
+            var (_, email) = SettingsManager.LoadEmail();
+            var (_, queryDb) = SettingsManager.LoadQueryDb();
+            var (_, appDb) = SettingsManager.LoadAppDb();
+
+            return (email, queryDb, appDb);
+        }
+
+        private static (EmailSender sender,
+                        SqlQueryRunner sqlRunner,
+                        TemplateRenderer templateRenderer,
+                        ReportRepository reportRepo,
+                        FileSaver fileSaver)
+            BuildServices(EmailSettings email, DatabaseSettings queryDb, string appConnectionString)
+        {
+            var sender = new EmailSender(email);
+            var sqlRunner = new SqlQueryRunner(queryDb);
+            var templateRenderer = new TemplateRenderer();
+            var reportRepo = new ReportRepository(appConnectionString);
+            var fileSaver = new FileSaver();
+
+            return (sender, sqlRunner, templateRenderer, reportRepo, fileSaver);
+        }
+
+        private static ReportDto? GetReportOrLog(ReportRepository repo, string subject)
+        {
+            var report = repo.GetReportBySubject(subject);
+            if (report == null)
+            {
+                InfrastructureLoggerConfig.Instance.Logger.Warning(
+                    "'{Subject}' başlıklı rapor bulunamadı.", subject);
+            }
+            return report;
+        }
+
+        private static string RenderEmail(TemplateRenderer renderer, ReportDto report, ReportExecutionResult result)
+        {
+            var tableModel = BuildScribanTable(result.Results);
+            // Template contains the table markup
+            return renderer.RenderTemplateAsync("Templates/EmailTemplate.sbn", new
+            {
+                subject = report.Subject,
+                status = result.Status.ToString(),
+                table = tableModel,
+                filePath = report.Directory
+            }).Result;
+        }
+
+        private static List<string> BuildAttachments(
+            FileSaver fileSaver,
+            ReportDto report,
+            ReportExecutionResult result,
+            string htmlBody)
+        {
+            var attachments = new List<string>();
+            var safeFileName = $"Report_{DateTime.Now:yyyyMMdd_HHmmss}";
+            var fileTypeToken = (report.FileType ?? string.Empty).ToLowerInvariant();
+
+            if (fileTypeToken.Contains("excel"))
+            {
+                var csvPath = fileSaver.SaveCsvToFile(report.Directory, safeFileName + ".csv", result.Results);
+                if (!string.IsNullOrEmpty(csvPath)) attachments.Add(csvPath);
+            }
+
+            if (fileTypeToken.Contains("html"))
+            {
+                var htmlPath = fileSaver.SaveHtmlToFile(report.Directory, safeFileName + ".html", htmlBody);
+                attachments.Add(htmlPath);
+            }
+
+            return attachments;
+        }
+
+        private static void SendReport(EmailSender sender, ReportDto report, string htmlBody, List<string> attachments)
+        {
+            sender.Send(report.Email, report.Subject, htmlBody, attachments.ToArray());
         }
 
         private static object BuildScribanTable(List<string> tsvLines)
@@ -123,7 +165,6 @@ namespace Infrastructure.Logic.Jobs
                 rows.Add(row);
             }
 
-            // object shape that matches your Scriban template
             return new
             {
                 headers = headers,

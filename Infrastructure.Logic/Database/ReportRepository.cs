@@ -3,7 +3,7 @@ using Core.Interfaces;
 using Infrastructure.Logic.Logging;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Text.Json;
 
 namespace Infrastructure.Logic.Database

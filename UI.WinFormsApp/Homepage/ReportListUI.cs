@@ -1,11 +1,12 @@
 ﻿using Common.Shared;
 using Common.Shared.Dtos;
 using Core.Interfaces;
+using Infrastructure.Logic;
+using Infrastructure.Logic.Config;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
 using Infrastructure.Logic.Templates;
-using Infrastructure.Logic.Config;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -19,29 +20,12 @@ namespace Logo_Project
 {
     public partial class ReportListUI : Form
     {
-        private readonly IEmailSender EmailSender;
-        private ISqlQueryRunner SqlQueryRunner;
-        private readonly IHangfireManager HangfireManager;
-        private readonly IFileSaver FileSaver;
-        private readonly EmailJob EmailJob;
-        private readonly TemplateRenderer TemplateRenderer;
-
+        private readonly AppServices Services;
         private List<ReportDto> Reports;
 
-        private readonly IReportRepository ReportRepository;
-
-
-
-        public ReportListUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
-                          IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
+        public ReportListUI(AppServices services)
         {
-            EmailSender = emailSender;
-            SqlQueryRunner = sqlQueryRunner;
-            HangfireManager = hangfireManager;
-            FileSaver = fileSaver;
-            EmailJob = emailJob;
-            TemplateRenderer = templateRenderer;
-            ReportRepository = reportRepository;
+            Services = services;
 
             InitializeComponent();
 
@@ -60,7 +44,7 @@ namespace Logo_Project
 
         private void LoadReportsGrid()
         {
-            Reports = ReportRepository.GetReports();
+            Reports = Services.ReportRepository.GetReports();
 
             dataGridViewReports.DataSource = Reports;
         }
@@ -68,7 +52,7 @@ namespace Logo_Project
 
         private void BtnNew_Click(object sender, EventArgs e)
         {
-            var form = new ReportPlannerUI(EmailSender, SqlQueryRunner, HangfireManager, FileSaver, EmailJob, TemplateRenderer, ReportRepository);
+            var form = new UI.WinFormsApp.ReportPlannerUI(Services);
             form.ShowDialog();
             LoadReportsGrid();
         }
@@ -84,7 +68,7 @@ namespace Logo_Project
             var index = dataGridViewReports.CurrentRow.Index;
             var selected = Reports[index];
 
-            var form = new ReportPlannerUI(EmailSender, SqlQueryRunner, HangfireManager, FileSaver, EmailJob, TemplateRenderer, ReportRepository);
+            var form = new UI.WinFormsApp.ReportPlannerUI(Services);
             form.LoadReport(selected);
             form.ShowDialog();
             LoadReportsGrid();
@@ -104,8 +88,8 @@ namespace Logo_Project
             var confirm = MessageBox.Show($"'{selected.Subject}' başlıklı raporu silmek istiyor musunuz?", "Onayla", MessageBoxButtons.YesNo);
             if (confirm == DialogResult.Yes)
             {
-                ReportRepository.DeleteReport(selected.Subject);
-                HangfireManager.RemoveRecurringJob(selected.Subject);
+                Services.ReportRepository.DeleteReport(selected.Subject);
+                Services.HangfireManager.RemoveRecurringJob(selected.Subject);
                 LoadReportsGrid();
             }
         }
@@ -114,7 +98,7 @@ namespace Logo_Project
         {
             foreach (var report in Reports.Where(r => r.Active))
             {
-                HangfireManager.ScheduleRecurringEmailJobs(report);
+                Services.HangfireManager.ScheduleRecurringEmailJobs(report);
             }
         }
 
@@ -135,12 +119,12 @@ namespace Logo_Project
             {
                 if (dataGridViewReports.Rows[e.RowIndex].DataBoundItem is ReportDto report)
                 {
-                    ReportRepository.UpdateReport(report.Subject, report);
+                    Services.ReportRepository.UpdateReport(report.Subject, report);
 
                     if (report.Active)
-                        HangfireManager.ScheduleRecurringEmailJobs(report);
+                        Services.HangfireManager.ScheduleRecurringEmailJobs(report);
                     else
-                        HangfireManager.RemoveRecurringJob(report.Subject);
+                        Services.HangfireManager.RemoveRecurringJob(report.Subject);
                 }
             }
         }
@@ -154,16 +138,11 @@ namespace Logo_Project
                 if (chooser.DatabaseSaved)
                 {
                     var (_, queryDb) = SettingsManager.LoadQueryDb();
-                    SqlQueryRunner = new SqlQueryRunner(queryDb);
+                    Services.SqlQueryRunner = new SqlQueryRunner(queryDb);
                 }
 
                 MessageBox.Show("Ayarlar güncellendi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-        }
-
-        private void dataGridViewReports_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-
         }
 
         private void dataGridViewReports_CellContentClick_1(object sender, DataGridViewCellEventArgs e)

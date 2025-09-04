@@ -2,6 +2,7 @@
 using Common.Shared.Dtos;
 using Core.Interfaces;
 using Hangfire;
+using Infrastructure.Logic;
 using Infrastructure.Logic.Config;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Email;
@@ -59,12 +60,6 @@ namespace Logo_Project
             var connectionAppString = appDb.ToConnectionString();
             var connectionQueryString = queryDb.ToConnectionString();
 
-            GlobalConfiguration.Configuration.UseSqlServerStorage(connectionAppString);
-
-            //Start Hangfire server
-            using var server = new BackgroundJobServer();
-
-
             var emailSender = new EmailSender(emailSettings);
             var emailJob = new EmailJob(emailSender);
             EmailJobWrapper.JobInstance = emailJob;
@@ -77,10 +72,21 @@ namespace Logo_Project
             var hangfireManager = new HangfireServerManager(emailJob, connectionAppString);
             hangfireManager.Start();
 
-            //Run UI
+            // Shared service holder
+            var services = new Infrastructure.Logic.AppServices(
+                emailSender,                 
+                sqlRunner,                   
+                hangfireManager,            
+                fileSaver,                   
+                emailJob,                  
+                templateRenderer,            
+                reportRepository             
+            );
+
+            // Run the hidden ShellForm
             ApplicationConfiguration.Initialize();
-            Application.Run(new ReportListUI(
-                emailSender, sqlRunner, hangfireManager, fileSaver, emailJob, templateRenderer, reportRepository));
+            Application.Run(new ShellForm(services));
+
         }
     }
 }

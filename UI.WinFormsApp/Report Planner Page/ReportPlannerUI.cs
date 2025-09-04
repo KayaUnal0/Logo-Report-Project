@@ -3,6 +3,7 @@ using Common.Shared.Dtos;
 using Common.Shared.Enums;
 using Core.Interfaces;
 using Hangfire;
+using Infrastructure.Logic;
 using Infrastructure.Logic.Database;
 using Infrastructure.Logic.Filesystem;
 using Infrastructure.Logic.Jobs;
@@ -10,23 +11,19 @@ using Infrastructure.Logic.Templates;
 using Logo_Project.Logging;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
-using System.Collections.Generic;
 
 
 namespace UI.WinFormsApp
 {
     public partial class ReportPlannerUI : Form
     {
-        private readonly ISqlQueryRunner SqlQueryRunner;
-        private readonly IHangfireManager HangfireManager;
-        private readonly EmailJob EmailJob;
-        private readonly IFileSaver FileSaver;
-        private readonly TemplateRenderer TemplateRenderer;
-        private readonly IReportRepository ReportRepository;
+        private readonly AppServices Services;
+
         private bool isEditMode = false;
         private string OriginalTitle;
         private ReportDto currentReport = null;
@@ -34,24 +31,19 @@ namespace UI.WinFormsApp
         private List<CheckBox> dayCheckboxes = new();
 
 
-        public ReportPlannerUI(IEmailSender emailSender, ISqlQueryRunner sqlQueryRunner, IHangfireManager hangfireManager,
-                     IFileSaver fileSaver, EmailJob emailJob, TemplateRenderer templateRenderer, IReportRepository reportRepository)
+        public ReportPlannerUI(AppServices services)
         {
-            SqlQueryRunner = sqlQueryRunner;
-            HangfireManager = hangfireManager;
-            EmailJob = emailJob;
-            FileSaver = fileSaver;
-            TemplateRenderer = templateRenderer;
-            ReportRepository = reportRepository;
+            Services = services;
 
             InitializeComponent();
-            // Build the weekly checkbox list used by logic
+
+            // Build the weekly checkbox list used by logic (unchanged)
             dayCheckboxes = new()
             {
                 cbPazartesi, cbSalı, cbÇarşamba, cbPerşembe, cbCuma, cbCumartesi, cbPazar
             };
 
-            // Populate Period combo and hook event
+            // Populate Period combo and hook event (unchanged)
             cmbPeriod.Items.AddRange(Enum.GetNames(typeof(ReportPeriod)));
             cmbPeriod.SelectedIndexChanged += CmbPeriod_SelectedIndexChanged;
             cmbPeriod.SelectedIndex = 0;    // Günlük
@@ -63,6 +55,7 @@ namespace UI.WinFormsApp
             btnBrowse.Click += BtnBrowse_Click;
             btnOnayla.Name = "btnOnayla";
         }
+
 
 
         private async void BtnOnayla_Click(object sender, EventArgs e)
@@ -95,7 +88,7 @@ namespace UI.WinFormsApp
                     .ToList();
 
                 // Execute SQL query
-                var result = SqlQueryRunner.ExecuteQuery(report.Query);
+                var result = Services.SqlQueryRunner.ExecuteQuery(report.Query);
 
                 // File paths and template rendering
                 string csvPath = null;
@@ -130,13 +123,13 @@ namespace UI.WinFormsApp
 
                 // Save or update report
                 if (isEditMode)
-                    ReportRepository.UpdateReport(OriginalTitle, report);
+                    Services.ReportRepository.UpdateReport(OriginalTitle, report);
                 else
 
-                    ReportRepository.SaveReport(report);
+                    Services.ReportRepository.SaveReport(report);
 
                 // Schedule recurring jobs
-                HangfireManager.ScheduleRecurringEmailJobs(report);
+                Services.HangfireManager.ScheduleRecurringEmailJobs(report);
 
                 MessageBox.Show("Rapor planlandı ve e-posta gönderimi sıraya alındı.",
                     "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
