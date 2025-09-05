@@ -154,6 +154,7 @@ namespace UI.WinFormsApp
             txtDirectory.Text = report.Directory;
             cmbPeriod.SelectedItem = report.Period.ToString();
 
+            SelectFileType(report.FileType);
 
             txtReportTitle.ReadOnly = true;
             txtDirectory.ReadOnly = true;
@@ -178,6 +179,30 @@ namespace UI.WinFormsApp
                 }
             }
 
+        }
+
+        private void SelectFileType(string? fileType)
+        {
+            if (string.IsNullOrWhiteSpace(fileType))
+            {
+                cmbFileType.SelectedIndex = 0; // Excel
+                return;
+            }
+
+            // Case-insensitive eşleştir
+            for (int i = 0; i < cmbFileType.Items.Count; i++)
+            {
+                var text = cmbFileType.Items[i]?.ToString();
+                if (string.Equals(text, fileType, StringComparison.OrdinalIgnoreCase))
+                {
+                    cmbFileType.SelectedIndex = i;
+                    return;
+                }
+            }
+
+            // Listede yoksa dinamik ekleyip seç
+            cmbFileType.Items.Add(fileType);
+            cmbFileType.SelectedItem = fileType;
         }
 
 

@@ -34,7 +34,8 @@ namespace Infrastructure.Logic.Database
             cmd.Parameters.AddWithValue("@Email", report.Email);
             cmd.Parameters.AddWithValue("@Period", report.Period.ToString());
             cmd.Parameters.AddWithValue("@Directory", string.IsNullOrWhiteSpace(report.Directory) ? DBNull.Value : report.Directory);
-            cmd.Parameters.AddWithValue("@IsActive", true);
+            cmd.Parameters.AddWithValue("@IsActive", report.Active);
+            cmd.Parameters.AddWithValue("@FileType", report.FileType ?? "Excel");
             cmd.Parameters.AddWithValue("@Json", json);
 
             cmd.ExecuteNonQuery();

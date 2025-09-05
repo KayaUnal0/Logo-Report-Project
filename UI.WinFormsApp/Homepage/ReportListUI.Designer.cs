@@ -130,6 +130,7 @@
             // 
             // btnSettings
             // 
+            btnSettings.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnSettings.Location = new Point(680, 20);
             btnSettings.Name = "btnSettings";
             btnSettings.Size = new Size(80, 28);

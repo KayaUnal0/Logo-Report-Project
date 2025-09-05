@@ -35,7 +35,7 @@ namespace Logo_Project
 
         private void SettingsChooserForm_Load(object? sender, EventArgs e)
         {
-            // no-op for now
+
         }
 
     }
